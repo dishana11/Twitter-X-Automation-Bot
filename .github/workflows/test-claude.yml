@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run test_claude.py
-        run: python test_claude.py
+      - name: Run test_claude_api.py
+        run: python test_claude_api.py
         env:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
