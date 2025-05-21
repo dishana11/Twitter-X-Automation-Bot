@@ -1,6 +1,6 @@
 import os
-import openai
 import tweepy
+from openai import OpenAI
 
 # Twitter authentication
 auth = tweepy.OAuth1UserHandler(
@@ -11,8 +11,8 @@ auth = tweepy.OAuth1UserHandler(
 )
 api = tweepy.API(auth)
 
-# OpenAI authentication
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# Initialize OpenAI client
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # Get custom prompt from GitHub Actions input
 custom_prompt = os.getenv("CUSTOM_PROMPT")
@@ -23,15 +23,15 @@ else:
     prompt = "Write a short, fun, science-themed tweet with an emoji."
 
 # Generate tweet using OpenAI
-response = openai.ChatCompletion.create(
-    model="gpt-4",
+response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
     messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": prompt}
-    ],
-    max_tokens=50
+    ]
 )
 
-tweet = response['choices'][0]['message']['content'].strip()
+tweet = response.choices[0].message.content.strip()
 
 # Post the tweet
 api.update_status(tweet)
