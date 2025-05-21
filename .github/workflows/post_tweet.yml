@@ -32,6 +32,6 @@ jobs:
         CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
         ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
         CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
       run: python main.py
