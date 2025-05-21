@@ -1,24 +1,25 @@
+name: Test Claude API
+
+on:
+  workflow_dispatch:  # Enables manual run button in GitHub Actions UI
+
 jobs:
-  tweet:
+  test_claude:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install requests tweepy
 
-      - name: Run tweet script
+      - name: Run test_claude.py script
         env:
-          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
-          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}   # <-- Add this
-          CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
-        run: python main.py
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        run: python test_claude.py
