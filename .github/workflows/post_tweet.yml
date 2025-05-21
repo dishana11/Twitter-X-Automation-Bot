@@ -34,4 +34,4 @@ jobs:
         ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
-      run: python your_script.py
+      run: python main.py
