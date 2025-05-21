@@ -1,17 +1,17 @@
 name: Test Claude API
 
 on:
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   test-claude:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run test_claude_api.py
-        run: python test_claude_api.py
+      - name: Run test_claude_api.py script
         env:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        run: python test_claude_api.py
