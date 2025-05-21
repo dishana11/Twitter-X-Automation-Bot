@@ -1,0 +1,37 @@
+name: Post Tweet with OpenAI
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_prompt:
+        description: 'Custom prompt for OpenAI'
+        required: false
+        default: ''
+
+jobs:
+  post_tweet:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openai tweepy
+
+    - name: Run tweet script
+      env:
+        CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+        CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
+      run: python your_script.py
