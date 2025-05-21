@@ -2,7 +2,7 @@ import os
 import requests
 import tweepy
 
-# Twitter authentication
+# Twitter auth setup
 auth = tweepy.OAuth1UserHandler(
     os.environ["CONSUMER_KEY"],
     os.environ["CONSUMER_SECRET"],
@@ -11,14 +11,15 @@ auth = tweepy.OAuth1UserHandler(
 )
 api = tweepy.API(auth)
 
-# Claude 3.7 Sonnet API endpoint and key
-claude_api_url = "https://api.anthropic.com/v1/claude-3.7/sonnet/completions"
-claude_api_key = os.environ["CLAUDE_API_KEY"]
+# Claude API setup
+claude_api_key = os.environ.get("CLAUDE_API_KEY")
+if not claude_api_key or not claude_api_key.strip():
+    raise ValueError("CLAUDE_API_KEY is not set or is invalid.")
+print(f"Using CLAUDE_API_KEY: {claude_api_key[:4]}...")  # Safe debug output
 
-# Get custom prompt from GitHub Actions input
+claude_api_url = "https://api.anthropic.com/v1/claude-3.7/sonnet/completions"
 custom_prompt = os.getenv("CUSTOM_PROMPT", "Write a short, fun, science-themed tweet with an emoji.")
 
-# Prepare the request payload
 payload = {
     "model": "claude-3.7-sonnet",
     "prompt": custom_prompt,
@@ -30,14 +31,15 @@ headers = {
     "Content-Type": "application/json"
 }
 
-# Generate tweet using Claude 3.7 Sonnet
 response = requests.post(claude_api_url, json=payload, headers=headers)
-response_data = response.json()
+if response.status_code != 200:
+    print(f"API call failed with {response.status_code}: {response.text}")
+    response.raise_for_status()
 
+response_data = response.json()
 tweet = response_data.get("choices", [{}])[0].get("text", "").strip()
 
 if tweet:
-    # Post the tweet
     api.update_status(tweet)
     print("Tweet posted:", tweet)
 else:
