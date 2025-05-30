@@ -1,37 +1,31 @@
-name: Post Tweet with OpenAI
+name: Post Tweet
 
 on:
   workflow_dispatch:
     inputs:
-      custom_prompt:
-        description: 'Custom prompt for OpenAI'
-        required: false
-        default: ''
+      mode:
+        description: 'Run Mode'
+        required: true
+        default: 'manual'
 
 jobs:
-  post_tweet:
+  post-tweet:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install openai tweepy
-
-    - name: Run tweet script
-      env:
-        CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
-        CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
-        OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
-        CUSTOM_PROMPT: ${{ github.event.inputs.custom_prompt }}
-      run: python main.py
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tweet bot
+        env:
+          CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        run: python main.py --mode manual
