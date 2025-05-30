@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 import tweepy
 
@@ -17,7 +18,6 @@ def twitter_auth():
     )
     return tweepy.API(auth)
 
-# --- OpenAI Request ---
 def generate_with_openai(prompt, api_key):
     url = "https://api.openai.com/v1/completions"
     data = {
@@ -33,13 +33,11 @@ def generate_with_openai(prompt, api_key):
         "Content-Type": "application/json"
     }
     response = requests.post(url, json=data, headers=headers, timeout=12)
-    # If there's a quota error, raise a custom exception
     if response.status_code == 429 or "quota" in response.text.lower():
         raise RuntimeError("OpenAI quota exceeded or rate limited")
     response.raise_for_status()
     return response.json()["choices"][0]["text"].strip()
 
-# --- Claude Request (Anthropic) ---
 def generate_with_claude(prompt):
     url = "https://api.anthropic.com/v1/complete"
     data = {
@@ -58,23 +56,19 @@ def generate_with_claude(prompt):
     response.raise_for_status()
     return response.json()["completion"].strip()
 
-# --- Unified Generate Function ---
 def generate_tweet(prompt):
-    # 1. Try primary OpenAI key
     try:
         tweet = generate_with_openai(prompt, OPENAI_API_KEY)
         print("Generated with OpenAI (main key).")
         return tweet[:280]
     except Exception as e:
         print(f"OpenAI main key failed: {e}")
-    # 2. Try backup OpenAI key
     try:
         tweet = generate_with_openai(prompt, OPENAI_SAMAPI_KEY)
         print("Generated with OpenAI (backup key).")
         return tweet[:280]
     except Exception as e:
         print(f"OpenAI backup key failed: {e}")
-    # 3. Try Claude
     try:
         tweet = generate_with_claude(prompt)
         print("Generated with Claude.")
@@ -91,14 +85,26 @@ def post_tweet(api, text):
         print(f"Error posting tweet: {e}")
 
 def manual_prompt_tweet():
-    prompt = input("Enter a prompt for your tweet: ")
+    if len(sys.argv) > 2:
+        prompt = sys.argv[2]
+    else:
+        prompt = os.getenv("PROMPT")
+    if not prompt:
+        try:
+            prompt = input("Enter a prompt for your tweet: ")
+        except EOFError:
+            print("No prompt provided and cannot use input() in this environment.")
+            return
     tweet_text = generate_tweet(prompt)
     print("Generated Tweet:\n", tweet_text)
-    confirm = input("Post this tweet? (y/n): ").lower()
-    if confirm == 'y':
+    if os.getenv("CI"):  # GitHub Actions sets CI=true
         post_tweet(twitter_auth(), tweet_text)
     else:
-        print("Tweet not posted.")
+        confirm = input("Post this tweet? (y/n): ").lower()
+        if confirm == 'y':
+            post_tweet(twitter_auth(), tweet_text)
+        else:
+            print("Tweet not posted.")
 
 if __name__ == "__main__":
     import argparse
