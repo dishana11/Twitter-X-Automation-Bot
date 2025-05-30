@@ -3,10 +3,9 @@ name: Post Tweet
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: 'Run Mode'
+      prompt:
+        description: 'Tweet prompt'
         required: true
-        default: 'manual'
 
 jobs:
   post-tweet:
@@ -28,4 +27,5 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          PROMPT: ${{ github.event.inputs.prompt }}
         run: python main.py --mode manual
