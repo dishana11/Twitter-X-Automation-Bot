@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  twitter-bot:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - TWITTER_CONSUMER_KEY=${TWITTER_CONSUMER_KEY}
+      - TWITTER_CONSUMER_SECRET=${TWITTER_CONSUMER_SECRET}
+      - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
+      - TWITTER_ACCESS_TOKEN_SECRET=${TWITTER_ACCESS_TOKEN_SECRET}
+      - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
