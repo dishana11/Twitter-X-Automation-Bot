@@ -5,7 +5,94 @@ on:
     inputs:
       tweet_content:
         description: 'Tweet content to post'
+        required: truename: Manual Tweet Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      tweet_content:
+        description: 'Tweet content to post'
         required: true
+        type: string
+      force_post:
+        description: 'Force post even if sentiment is not positive'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  post-tweet:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r deploy_requirements.txt
+    
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('vader_lexicon', quiet=True)"
+    
+    - name: Post Tweet
+      env:
+        TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+        TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+        TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+        TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+        TWEET_CONTENT: ${{ inputs.tweet_content }}
+        FORCE_POST: ${{ inputs.force_post }}
+      run: |
+        python -c "
+        import tweepy
+        import os
+        from bot.sentiment_analyzer import SentimentAnalyzer
+        from config.settings import get_api_credentials
+        
+        # Initialize
+        sentiment_analyzer = SentimentAnalyzer()
+        credentials = get_api_credentials()
+        
+        client = tweepy.Client(
+            consumer_key=credentials['consumer_key'],
+            consumer_secret=credentials['consumer_secret'],
+            access_token=credentials['access_token'],
+            access_token_secret=credentials['access_token_secret']
+        )
+        
+        content = os.getenv('TWEET_CONTENT')
+        force = os.getenv('FORCE_POST', 'false').lower() == 'true'
+        
+        # Analyze sentiment
+        sentiment_result = sentiment_analyzer.analyze_sentiment(content)
+        print(f'Content: {content}')
+        print(f'Sentiment: {sentiment_result[\"sentiment\"]} (confidence: {sentiment_result[\"confidence\"]:.3f})')
+        
+        # Check if should post
+        should_post = force or sentiment_result['sentiment'] != 'negative' or sentiment_result['confidence'] < 0.5
+        
+        if should_post:
+            try:
+                response = client.create_tweet(text=content)
+                tweet_id = response.data['id']
+                print(f'Tweet posted successfully! ID: {tweet_id}')
+                print(f'URL: https://twitter.com/i/web/status/{tweet_id}')
+            except Exception as e:
+                print(f'Failed to post: {e}')
+                exit(1)
+        else:
+            print('Tweet not posted due to negative sentiment. Use force_post=true to override.')
+            exit(1)
+        "
         type: string
       force_post:
         description: 'Force post even if sentiment is not positive'
