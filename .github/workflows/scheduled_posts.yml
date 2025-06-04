@@ -1,0 +1,89 @@
+name: Scheduled Daily Posts
+
+on:
+  schedule:
+    # Run daily at 10:00 AM IST (4:30 AM UTC)
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  daily-post:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r deploy_requirements.txt
+    
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('vader_lexicon', quiet=True)"
+    
+    - name: Create and post daily content
+      env:
+        TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+        TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+        TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+        TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+      run: |
+        python -c "
+        import tweepy
+        import random
+        from datetime import datetime
+        from bot.sentiment_analyzer import SentimentAnalyzer
+        from config.settings import get_api_credentials
+        
+        # Initialize components
+        sentiment_analyzer = SentimentAnalyzer()
+        credentials = get_api_credentials()
+        
+        client = tweepy.Client(
+            consumer_key=credentials['consumer_key'],
+            consumer_secret=credentials['consumer_secret'],
+            access_token=credentials['access_token'],
+            access_token_secret=credentials['access_token_secret']
+        )
+        
+        # Content templates
+        topics = ['AI', 'Python', 'automation', 'technology', 'innovation']
+        topic = random.choice(topics)
+        
+        templates = [
+            f'Exploring the amazing world of {topic}! The possibilities are endless and exciting!',
+            f'Just discovered fascinating insights about {topic}! This could revolutionize everything!',
+            f'The future of {topic} looks incredibly promising! Excited to see what comes next!',
+            f'Working with {topic} today - incredible how fast this field is advancing!',
+            f'Latest developments in {topic} are truly remarkable! Innovation never stops!'
+        ]
+        
+        content = random.choice(templates)
+        timestamp = datetime.now().strftime('%m%d')
+        final_content = f'{content} #{timestamp} #{topic.replace(' ', '')}'
+        
+        # Analyze sentiment
+        sentiment_result = sentiment_analyzer.analyze_sentiment(final_content)
+        print(f'Generated content: {final_content}')
+        print(f'Sentiment: {sentiment_result[\"sentiment\"]} (confidence: {sentiment_result[\"confidence\"]:.3f})')
+        
+        # Post if positive sentiment
+        if sentiment_result['sentiment'] == 'positive' or sentiment_result['confidence'] < 0.3:
+            try:
+                response = client.create_tweet(text=final_content)
+                tweet_id = response.data['id']
+                print(f'Daily tweet posted! ID: {tweet_id}')
+                print(f'URL: https://twitter.com/i/web/status/{tweet_id}')
+            except Exception as e:
+                print(f'Failed to post: {e}')
+        else:
+            print('Content not posted due to negative sentiment')
+        "
