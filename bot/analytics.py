@@ -1,19 +1,29 @@
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class AnalyticsTracker:
     def __init__(self):
-        """Initialize your analytics tracker (e.g., set up files, APIs, etc.)"""
+        self.daily_stats = {}
         logger.info("AnalyticsTracker initialized")
 
-    def track(self, event_name, data=None):
+    def get_daily_stats(self, date_str):
         """
-        Track an event with optional data.
-        :param event_name: Name of the event (str)
-        :param data: Additional data (dict or None)
+        Return stats for the given date as a dictionary.
+        If there are no stats yet, return an empty dict.
         """
-        if data is None:
-            data = {}
-        logger.info(f"Tracked event: {event_name} | Data: {data}")
-        # Here you could send the data to a database, analytics service, or write to a file
+        return self.daily_stats.get(date_str, {})
+
+    def record_tweet(self, tweet_id, content, tweet_type="intelligent_v2"):
+        date_str = datetime.now().date().isoformat()
+        if date_str not in self.daily_stats:
+            self.daily_stats[date_str] = {"tweets_posted": 0, "tweets": []}
+        self.daily_stats[date_str]["tweets_posted"] += 1
+        self.daily_stats[date_str]["tweets"].append({
+            "id": tweet_id,
+            "content": content,
+            "type": tweet_type,
+            "timestamp": datetime.now().isoformat()
+        })
+        logger.info(f"Recorded tweet: {tweet_id}")
