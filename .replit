@@ -7,3 +7,7 @@ packages = ["glibcLocales"]
 
 [deployment]
 run = ["sh", "-c", "streamlit run app.py"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
