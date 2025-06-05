@@ -1,4 +1,4 @@
-name: Manual Claude AI Tweet Post
+name: Manual Fallback AI Tweet Post
 
 on:
   workflow_dispatch:
@@ -31,12 +31,15 @@ jobs:
           pip install requests
           pip install -r deploy_requirements.txt
 
-      - name: Generate Tweet with Claude
+      - name: Generate Tweet with Fallback AI
         env:
           PROMPT: ${{ inputs.tweet_prompt }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python generate_claude_tweet.py
+          python generate_fallback_tweet.py
 
       - name: Post Tweet
         env:
