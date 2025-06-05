@@ -51,7 +51,6 @@ import os
 from bot.sentiment_analyzer import SentimentAnalyzer
 from config.settings import get_api_credentials
 
-# Initialize
 sentiment_analyzer = SentimentAnalyzer()
 credentials = get_api_credentials()
 
@@ -65,12 +64,10 @@ client = tweepy.Client(
 content = os.getenv('TWEET_CONTENT')
 force = os.getenv('FORCE_POST', 'false').lower() == 'true'
 
-# Analyze sentiment
 sentiment_result = sentiment_analyzer.analyze_sentiment(content)
 print(f'Content: {content}')
 print(f'Sentiment: {sentiment_result[\"sentiment\"]} (confidence: {sentiment_result[\"confidence\"]:.3f})')
 
-# Check if should post
 should_post = force or sentiment_result['sentiment'] != 'negative' or sentiment_result['confidence'] < 0.5
 
 if should_post:
