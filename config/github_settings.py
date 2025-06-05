@@ -46,7 +46,6 @@ def load_config(config_path='config/config.json'):
                 "rate_limit_window": 15
             }
         }
-    
     return config
 
 def validate_config(config):
@@ -82,11 +81,9 @@ def create_default_config(config_path):
             "rate_limit_window": 15
         }
     }
-    
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
     with open(config_path, 'w') as f:
         json.dump(default_config, f, indent=2)
-    
     return default_config
 
 def get_github_config():
