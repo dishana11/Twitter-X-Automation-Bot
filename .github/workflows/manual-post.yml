@@ -83,3 +83,10 @@ else:
     print('Tweet not posted due to negative sentiment. Use force_post=true to override.')
     exit(1)
 "
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tweet-logs
+        path: logs/
