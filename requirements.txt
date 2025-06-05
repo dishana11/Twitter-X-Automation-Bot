@@ -7,3 +7,4 @@ schedule==1.2.2
 pytz==2025.2
 nltk==3.9.1
 pandas==2.2.3
+tlgbotfwk

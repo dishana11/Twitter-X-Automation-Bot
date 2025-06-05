@@ -1,0 +1,9 @@
+modules = ["python-3.12", "bash"]
+run = "streamlit run app.py"
+
+[nix]
+channel = "stable-24_05"
+packages = ["glibcLocales"]
+
+[deployment]
+run = ["sh", "-c", "streamlit run app.py"]
