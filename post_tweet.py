@@ -6,7 +6,7 @@ from config.settings import get_api_credentials
 def main():
     content = os.getenv('TWEET_CONTENT', '')
     force = os.getenv('FORCE_POST', 'false').lower() == 'true'
-    
+
     sentiment_analyzer = SentimentAnalyzer()
     credentials = get_api_credentials()
     client = tweepy.Client(
