@@ -1,0 +1,63 @@
+name: Twitter Automation Bot
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+  # Run on push to main branch
+  push:
+    branches: [ main, master ]
+
+jobs:
+  run-twitter-bot:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/deploy_requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r deploy_requirements.txt
+    
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('vader_lexicon', quiet=True)"
+    
+    - name: Create data directories
+      run: |
+        mkdir -p data logs
+    
+    - name: Run Twitter Bot
+      env:
+        TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+        TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+        TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+        TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+      run: |
+        python production_bot_v2.py
+    
+    - name: Upload logs (if exists)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: bot-logs-${{ github.run_number }}
+        path: logs/
+        retention-days: 7
