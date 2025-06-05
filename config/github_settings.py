@@ -88,3 +88,7 @@ def create_default_config(config_path):
         json.dump(default_config, f, indent=2)
     
     return default_config
+
+def get_github_config():
+    """Alias for loading the GitHub config, for compatibility."""
+    return load_config()
