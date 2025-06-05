@@ -1,4 +1,3 @@
-
 """
 Configuration settings for the Twitter bot
 """
@@ -21,20 +20,17 @@ def get_api_credentials() -> Dict[str, str]:
         'access_token_secret': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
         'bearer_token': os.getenv('TWITTER_BEARER_TOKEN', '')
     }
-    
-    # Validate credentials
     missing_creds = [key for key, value in credentials.items() if not value]
     if missing_creds:
         logger.warning(f"Missing credentials: {missing_creds}")
-        
     return credentials
 
 def get_bot_config() -> Dict[str, Any]:
     """Get bot configuration settings"""
     return {
         'posting_limits': {
-            'daily_limit': 16,  # Free tier limit
-            'monthly_limit': 500,  # Free tier limit
+            'daily_limit': 16,
+            'monthly_limit': 500,
             'respect_limits': True
         },
         'sentiment_analysis': {
@@ -61,33 +57,8 @@ def load_config(config_path='config/config.json'):
             with open(config_path, 'r') as f:
                 config = json.load(f)
         else:
-            # Return default configuration
-            config = {
-                "bot": {
-                    "name": "Twitter Automation Bot",
-                    "max_daily_replies": 50,
-                    "reply_keywords": ["AI", "automation", "python", "bot"],
-                    "post_interval_hours": 24
-                },
-                "hashtags": {
-                    "monitor": ["#AI", "#Technology", "#Innovation", "#Python"],
-                    "use_in_posts": True,
-                    "max_per_tweet": 3
-                },
-                "sentiment": {
-                    "positive_threshold": 0.1,
-                    "negative_threshold": -0.1,
-                    "confidence_threshold": 0.5
-                },
-                "limits": {
-                    "daily_tweets": 16,
-                    "monthly_tweets": 500,
-                    "rate_limit_window": 15
-                }
-            }
+            config = get_bot_config()
     except Exception as e:
         logger.error(f"Error loading config: {e}")
-        # Return minimal default config
         config = get_bot_config()
-    
     return config
