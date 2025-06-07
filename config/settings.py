@@ -18,7 +18,7 @@ def get_api_credentials() -> Dict[str, str]:
         'consumer_secret': os.getenv('TWITTER_CONSUMER_SECRET', ''),
         'access_token': os.getenv('TWITTER_ACCESS_TOKEN', ''),
         'access_token_secret': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
-        'TWITTER_BEARER_TOKEN': os.getenv('TWITTER_BEARER_TOKEN', '')
+        'bearer_token': os.getenv('TWITTER_BEARER_TOKEN', '')
     }
     missing_creds = [key for key, value in credentials.items() if not value]
     if missing_creds:
