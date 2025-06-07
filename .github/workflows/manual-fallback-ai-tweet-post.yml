@@ -38,6 +38,7 @@ jobs:
           OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}   # <-- Added this line
         run: |
           python generate_fallback_tweet.py
 
