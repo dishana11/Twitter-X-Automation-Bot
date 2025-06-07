@@ -7,6 +7,10 @@ import json
 import logging
 from typing import Dict, Any
 
+# Optional: Load .env if using dotenv package
+# from dotenv import load_dotenv
+# load_dotenv()
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +24,8 @@ def get_api_credentials() -> Dict[str, str]:
         'access_token_secret': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
         'bearer_token': os.getenv('TWITTER_BEARER_TOKEN', '')
     }
+    # Debug print for troubleshooting:
+    print("TWITTER_BEARER_TOKEN ENV:", os.getenv('TWITTER_BEARER_TOKEN'))
     missing_creds = [key for key, value in credentials.items() if not value]
     if missing_creds:
         logger.warning(f"Missing credentials: {missing_creds}")
