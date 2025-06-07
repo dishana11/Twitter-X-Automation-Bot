@@ -52,6 +52,34 @@ def get_openrouter_tweet(api_key, prompt):
         print(f"OpenRouter failed: {e}")
         return None
 
+def get_gemini_tweet(api_key, prompt):
+    if not api_key:
+        print("No Google Gemini API key provided.")
+        return None
+    endpoint_template = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    models = [
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-pro-latest"
+    ]
+    headers = {"Content-Type": "application/json"}
+    body = {
+        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags."}]}]
+    }
+    for model in models:
+        try:
+            url = endpoint_template.format(model=model, api_key=api_key)
+            resp = requests.post(url, headers=headers, json=body, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Google's Gemini response structure
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            else:
+                print(f"Gemini {model} failed: {resp.status_code} {resp.text}")
+        except Exception as e:
+            print(f"Gemini {model} exception: {e}")
+    print("All Gemini models failed.")
+    return None
+
 prompt = os.environ["PROMPT"]
 
 tweet = None
@@ -70,6 +98,10 @@ if not tweet:
 # Try OpenRouter
 if not tweet:
     tweet = get_openrouter_tweet(os.environ.get("OPENROUTER_API_KEY"), prompt) if os.environ.get("OPENROUTER_API_KEY") else None
+
+# Try Gemini
+if not tweet:
+    tweet = get_gemini_tweet(os.environ.get("GOOGLE_GEMINI"), prompt) if os.environ.get("GOOGLE_GEMINI") else None
 
 if tweet:
     print(f"Generated Tweet: {tweet}")
