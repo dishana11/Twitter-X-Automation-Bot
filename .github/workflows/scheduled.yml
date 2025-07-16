@@ -59,7 +59,7 @@ jobs:
           GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python generate_fallback_tweet.py --scheduled
+          python generate_scheduled_tweet.py --scheduled
 
       - name: Post Current Scheduled Tweet
         env:
