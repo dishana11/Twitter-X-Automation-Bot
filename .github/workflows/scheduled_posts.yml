@@ -2,8 +2,27 @@ name: Scheduled Daily Posts
 
 on:
   schedule:
-    # One batch job per day at 8:30 AM UTC (adjust as needed for your timezone)
+    # Schedule posts at 1-hour intervals for 15–20 posts/day (every hour from 4:30 to 23:30 UTC)
+    - cron: '30 4 * * *'
+    - cron: '30 5 * * *'
+    - cron: '30 6 * * *'
+    - cron: '30 7 * * *'
     - cron: '30 8 * * *'
+    - cron: '30 9 * * *'
+    - cron: '30 10 * * *'
+    - cron: '30 11 * * *'
+    - cron: '30 12 * * *'
+    - cron: '30 13 * * *'
+    - cron: '30 14 * * *'
+    - cron: '30 15 * * *'
+    - cron: '30 16 * * *'
+    - cron: '30 17 * * *'
+    - cron: '30 18 * * *'
+    - cron: '30 19 * * *'
+    - cron: '30 20 * * *'
+    - cron: '30 21 * * *'
+    - cron: '30 22 * * *'
+    - cron: '30 23 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,28 +30,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r deploy_requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r deploy_requirements.txt
 
-      - name: Save prompt to file
-        run: |
-          cat << 'EOF' > prompt.txt
-          You are a social media automation AI managing a tech-forward personal brand on X.com (formerly Twitter). Your job is to generate 30 or more original, engaging, human-like posts every day tha[...]
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('vader_lexicon', quiet=True)"
+
+    - name: Create and post daily content
+      env:
+        TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+        TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+        TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+        TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+        PROMPT: |
+          You are a social media automation AI managing a tech-forward personal brand on X.com (formerly Twitter). Your job is to generate 30 or more original, engaging, human-like posts every day that cover a wide range of tech-related topics. These posts must be suitable for X.com and designed to educate, entertain, or update the tech community. You must sound like a real, curious, witty human, not a bot.
 
           📅 DAILY CONTENT GOALS (Minimum 30 Posts Per Day)
           Your daily content should be divided into four primary categories:
 
-          🔬 Tech & Industry News (10 posts/day) Focus on recent news from major tech companies. Prioritize:
+          🔬 Tech & Industry News (5 posts/day) Focus on recent news from major tech companies. Prioritize:
           Nvidia (product launches, AI chips, Blackwell updates, CUDA, etc.)
           Tesla (autonomy, robotics, Dojo, stock moves)
           Google / DeepMind / Alphabet (Gemini updates, AI research, new tools)
@@ -42,7 +70,7 @@ jobs:
           Other rising or established players (Amazon, Microsoft, etc.)
           Each post must:
           - Summarize the news in a fresh and catchy way
-          - Include relevant hashtags (2 per post)
+          - Include relevant hashtags (3–6 per post)
           - If applicable, attach an image (scrape or fetch news/image API for royalty-free photos or screenshots)
           - Sound curious, not robotic
 
@@ -69,9 +97,9 @@ jobs:
           - Sound motivational and action-driven
           - Use CTAs like “Apply now 👇”, “Last day to register!”, “Here’s a gem 💎”
 
-          😂 Tech Humor / Relatable Posts (10 posts/day) These are meant to go viral or be shareable. Use:
+          😂 Tech Humor / Relatable Posts (5 posts/day) These are meant to go viral or be shareable. Use:
           Memes
-          One-liners
+          
           Relatable dev/work-from-home/workplace tech humor
           GPT jokes, startup struggles, AI hallucinations, code fails, etc.
           Guidelines:
@@ -126,13 +154,62 @@ jobs:
           Twitter trending
           X.com Explore AI / Startups sections
 
-          could start with i read a lot , or i surf through websites a lot and i just came across or imagine being an intern at .. or HALLELUJAH coders jp morgan just dropped a hackathon or DEVMINDS d[...]
-          EOF
-
-      - name: Generate and send daily posts
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
-          # Add other secrets here (email smtp, twitter/x keys, etc)
-        run: |
-          python generate_daily_posts.py --prompt prompt.txt
+          could start with i read a lot , or i surf through websites a lot and i just came across or imagine being an intern at .. or HALLELUJAH coders jp morgan just dropped a hackathon or DEVMINDS devpost is here with another hackathon with amazing prize money about time you utilise those skills out of your closet
+      run: |
+        python -c "
+        import tweepy
+        import random
+        from datetime import datetime
+        from bot.sentiment_analyzer import SentimentAnalyzer
+        from config.settings import get_api_credentials
+        import os
+        
+        # Initialize components
+        sentiment_analyzer = SentimentAnalyzer()
+        credentials = get_api_credentials()
+        
+        client = tweepy.Client(
+            consumer_key=credentials['consumer_key'],
+            consumer_secret=credentials['consumer_secret'],
+            access_token=credentials['access_token'],
+            access_token_secret=credentials['access_token_secret']
+        )
+        
+        prompt = os.getenv('PROMPT')
+        
+        # For demonstration, you may want to call your post generator here using the prompt
+        # Your existing random topic/template logic can be replaced with your actual post generation logic
+        
+        # Example: You should use the prompt for AI generation of posts here!
+        topics = ['AI', 'Python', 'automation', 'technology', 'innovation']
+        topic = random.choice(topics)
+        
+        templates = [
+            f'Exploring the amazing world of {topic}! The possibilities are endless and exciting!',
+            f'Just discovered fascinating insights about {topic}! This could revolutionize everything!',
+            f'The future of {topic} looks incredibly promising! Excited to see what comes next!',
+            f'Working with {topic} today - incredible how fast this field is advancing!',
+            f'Latest developments in {topic} are truly remarkable! Innovation never stops!'
+        ]
+        
+        content = random.choice(templates)
+        timestamp = datetime.now().strftime('%m%d')
+        final_content = f'{content} #{timestamp} #{topic.replace(' ', '')}'
+        
+        # Analyze sentiment
+        sentiment_result = sentiment_analyzer.analyze_sentiment(final_content)
+        print(f'Generated content: {final_content}')
+        print(f'Sentiment: {sentiment_result[\"sentiment\"]} (confidence: {sentiment_result[\"confidence\"]:.3f})')
+        
+        # Post if positive sentiment
+        if sentiment_result['sentiment'] == 'positive' or sentiment_result['confidence'] < 0.3:
+            try:
+                response = client.create_tweet(text=final_content)
+                tweet_id = response.data['id']
+                print(f'Daily tweet posted! ID: {tweet_id}')
+                print(f'URL: https://twitter.com/i/web/status/{tweet_id}')
+            except Exception as e:
+                print(f'Failed to post: {e}')
+        else:
+            print('Content not posted due to negative sentiment')
+        "
