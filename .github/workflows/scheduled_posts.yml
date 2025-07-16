@@ -132,7 +132,7 @@ jobs:
       - name: Generate and send daily posts
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
           # Add other secrets here (email smtp, twitter/x keys, etc)
         run: |
           python generate_daily_posts.py --prompt prompt.txt
