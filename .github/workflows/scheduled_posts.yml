@@ -2,38 +2,32 @@ name: Scheduled Daily Posts
 
 on:
   schedule:
-    # Schedule posts at 1-hour intervals for 15–20 posts/day
-    - cron: '30 4 * * *'
-    - cron: '30 5 * * *'
-    - cron: '30 6 * * *'
-    - cron: '30 7 * * *'
+    # One batch job per day at 8:30 AM UTC (adjust as needed for your timezone)
     - cron: '30 8 * * *'
-    - cron: '30 9 * * *'
-    - cron: '30 10 * * *'
-    - cron: '30 11 * * *'
-    - cron: '30 12 * * *'
-    - cron: '30 13 * * *'
-    - cron: '30 14 * * *'
-    - cron: '30 15 * * *'
-    - cron: '30 16 * * *'
-    - cron: '30 17 * * *'
-    - cron: '30 18 * * *'
-    - cron: '30 19 * * *'
-    - cron: '30 20 * * *'
-    - cron: '30 21 * * *'
-    - cron: '30 22 * * *'
-    - cron: '30 23 * * *'
   workflow_dispatch:
 
 jobs:
   daily-post:
     runs-on: ubuntu-latest
+
     steps:
-    # ...setup steps...
-    - name: Create and post daily content
-      env:
-        PROMPT: |
-          You are a social media automation AI managing a tech-forward personal brand on X.com (formerly Twitter). Your job is to generate 30 or more original, engaging, human-like posts every day that cover a wide range of tech-related topics. These posts must be suitable for X.com and designed to educate, entertain, or update the tech community. You must sound like a real, curious, witty human, not a bot.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r deploy_requirements.txt
+
+      - name: Save prompt to file
+        run: |
+          cat << 'EOF' > prompt.txt
+          You are a social media automation AI managing a tech-forward personal brand on X.com (formerly Twitter). Your job is to generate 30 or more original, engaging, human-like posts every day tha[...]
 
           📅 DAILY CONTENT GOALS (Minimum 30 Posts Per Day)
           Your daily content should be divided into four primary categories:
@@ -132,11 +126,12 @@ jobs:
           Twitter trending
           X.com Explore AI / Startups sections
 
-          could start with i read a lot , or i surf through websites a lot and i just came across or imagine being an intern at .. or HALLELUJAH coders jp morgan just dropped a hackathon or DEVMINDS devpost is here with another hackathon with amazing prize money about time you utilise those skills out of your closet
-      # ...other secrets...
-      run: |
-        python -c "
-import os
-prompt = os.getenv('PROMPT')
-# Pass 'prompt' to your PostGenerator
-"
+          could start with i read a lot , or i surf through websites a lot and i just came across or imagine being an intern at .. or HALLELUJAH coders jp morgan just dropped a hackathon or DEVMINDS d[...]
+          EOF
+
+      - name: Generate and send daily posts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # Add other secrets here (email smtp, twitter/x keys, etc)
+        run: |
+          python generate_daily_posts.py --prompt prompt.txt
