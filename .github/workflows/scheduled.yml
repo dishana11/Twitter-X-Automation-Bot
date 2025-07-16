@@ -2,7 +2,7 @@ name: Scheduled Daily Posts
 
 on:
   schedule:
-    - cron: '30 8 * * *'   # Change times as needed
+    - cron: '30 8 * * *'
     - cron: '30 14 * * *'
     - cron: '30 20 * * *'
     - cron: '30 2 * * *'
@@ -26,35 +26,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r deploy_requirements.txt
-
-      - name: Generate 5 Scheduled Tweets
-        env:
-          PROMPT: |
-            You are a witty, up-to-date social media creator for X.com.
-            Your job is to:
-            1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
-            2. Generate 5 distinct, scroll-stopping tweet options based on trending tech topics.
-            3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
-
-            Each tweet should:
-            - Be ≤280 characters
-            - Be 4–6 sentences when possible
-            - Include 3–6 smart hashtags
-            - Sound human, not robotic
-            - (Optional) Include meme or image idea
-
-            Format exactly like this:
-
-            ---
-            Tweet 1:
-            [text]
-
-            #hashtags
-            Image suggestion: [desc]
-
-            Tweet 2:
-            ...
-            ---
 
       - name: Download NLTK data
         run: |
