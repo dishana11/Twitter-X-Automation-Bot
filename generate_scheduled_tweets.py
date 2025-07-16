@@ -6,7 +6,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 output_file = Path("scheduled_tweets.json")
 today = datetime.now().strftime("%Y-%m-%d")
 
-# If already generated for today, exit
+# Prevent duplicate generation
 if output_file.exists():
     try:
         existing = json.load(output_file.open())
@@ -14,45 +14,28 @@ if output_file.exists():
             print("✅ Already generated for today.")
             exit(0)
     except json.JSONDecodeError:
-        print("⚠️ Existing file corrupted. Overwriting.")
+        print("⚠️ Corrupted JSON file. Overwriting.")
 
-# Prompt for AI generation
-prompt = '''
-You are an extremely online, witty tech content creator who writes sharp, scroll-stopping tweets for a modern audience on X.com.
+# Tweet generation prompt
+prompt = '''You are a witty tech content creator...
 
-Your job:
-➡️ Create 5 tweets per day.
-➡️ Make sure they’re based on current trending topics, recent tech news, and startup buzz (past 3–5 days).
-➡️ Prioritize positive or witty sentiment only.
-
-Categories to include:
-- 🚀 Trending product launches (e.g., Google, Tesla, Nvidia, Meta, OpenAI)
-- 💸 Recent funding rounds (e.g., Scale AI, Y Combinator startups)
-- 🎯 Career opportunities (e.g., internships, fellowships, hackathons)
-- 😂 Developer humor and tech memes
-- 🧠 AI breakthroughs (e.g., generative AI, new LLMs, AGI trends)
-
-Each tweet must:
-- Be 1 tweet long (max 280 characters)
-- Be in natural, casual tone (avoid generic robotic phrases)
-- Include 3 relevant hashtags
-- Be unique and different from each other
-- End with a newline if needed for readability
-
-Output as a JSON list of 5 tweet strings (no numbering or formatting).
+(keep your existing prompt here)...
 '''
 
 tweets = []
 
-# Try Gemini first
+# ✅ Try Gemini (correct usage)
 try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
-    model = genai.GenerativeModel(model_name="models/gemini-pro")
-    result = model.generate_content(prompt)
-    tweets = json.loads(result.text)
+    model = genai.GenerativeModel("gemini-pro")  # <- fixed line
+    response = model.generate_content(prompt)
+    tweets = json.loads(response.text)
 except Exception as e:
-    print("⚠️ Gemini failed, falling back to OpenAI:", e)
+    print("⚠️ Gemini failed:", e)
+
+# Fallback to OpenAI if Gemini fails and tweets are still empty
+if not tweets:
     try:
         import openai
         openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -61,15 +44,15 @@ except Exception as e:
             messages=[{"role": "user", "content": prompt}]
         )
         tweets = json.loads(response.choices[0].message.content)
-    except Exception as openai_error:
-        print("❌ OpenAI failed too:", openai_error)
+    except Exception as e:
+        print("❌ OpenAI failed too:", e)
         exit(1)
 
-# Filter positive tweets
+# Filter for positivity
 sia = SentimentIntensityAnalyzer()
 positive = [t for t in tweets if sia.polarity_scores(t)["compound"] > 0.1][:5]
 
-# Save to file
+# Save to JSON file
 with output_file.open("w") as f:
     json.dump({"date": today, "tweets": positive}, f)
 
