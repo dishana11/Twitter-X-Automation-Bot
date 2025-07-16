@@ -42,7 +42,7 @@ jobs:
           Other rising or established players (Amazon, Microsoft, etc.)
           Each post must:
           - Summarize the news in a fresh and catchy way
-          - Include relevant hashtags (3–6 per post)
+          - Include relevant hashtags (2 per post)
           - If applicable, attach an image (scrape or fetch news/image API for royalty-free photos or screenshots)
           - Sound curious, not robotic
 
@@ -132,6 +132,7 @@ jobs:
       - name: Generate and send daily posts
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
           # Add other secrets here (email smtp, twitter/x keys, etc)
         run: |
           python generate_daily_posts.py --prompt prompt.txt
