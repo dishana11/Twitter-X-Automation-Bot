@@ -1,0 +1,150 @@
+name: Scheduled Daily Posts
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+    - cron: '30 5 * * *'
+    - cron: '30 6 * * *'
+    - cron: '30 7 * * *'
+    - cron: '30 8 * * *'
+    - cron: '30 9 * * *'
+    - cron: '30 10 * * *'
+    - cron: '30 11 * * *'
+    - cron: '30 12 * * *'
+    - cron: '30 13 * * *'
+    - cron: '30 14 * * *'
+    - cron: '30 15 * * *'
+    - cron: '30 16 * * *'
+    - cron: '30 17 * * *'
+    - cron: '30 18 * * *'
+    - cron: '30 19 * * *'
+    - cron: '30 20 * * *'
+    - cron: '30 21 * * *'
+    - cron: '30 22 * * *'
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  daily-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tweepy requests openai google-generativeai nltk
+          if [ -f deploy_requirements.txt ]; then pip install -r deploy_requirements.txt; fi
+
+      - name: Download NLTK data
+        run: |
+          python -c "import nltk; nltk.download('vader_lexicon')"
+
+      - name: Generate content using Gemini (fallback to OpenAI)
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python -c "
+import os, json
+from datetime import datetime
+from pathlib import Path
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+output_file = Path('scheduled_tweets.json')
+is_new_day = not output_file.exists() or datetime.now().strftime('%Y-%m-%d') not in output_file.read_text()
+
+prompt = '''
+You are an extremely online, witty tech content creator who writes sharp, scroll-stopping tweets for a modern audience on X.com.
+
+Your job:
+➡️ Create 40 tweets per day.
+➡️ Make sure they’re based on current trending topics, recent tech news, and startup buzz (past 3–5 days).
+➡️ Prioritize positive or witty sentiment only.
+
+Categories to include:
+- 🚀 Trending product launches (e.g., Google, Tesla, Nvidia, Meta, OpenAI)
+- 💸 Recent funding rounds (e.g., Scale AI, Y Combinator startups)
+- 🎯 Career opportunities (e.g., internships, fellowships, hackathons)
+- 😂 Developer humor and tech memes
+- 🧠 AI breakthroughs (e.g., generative AI, new LLMs, AGI trends)
+
+Each tweet must:
+- Be 1 tweet long (max 280 characters)
+- Be in natural, casual tone (avoid generic robotic phrases)
+- Include 3 relevant hashtags
+- Be unique and different from each other
+- End with a newline if needed for readability
+
+Output as a JSON list of 40 tweet strings (no numbering or formatting).
+'''
+
+if is_new_day:
+    tweets = []
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=os.getenv('GEMINI_KEY'))
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        tweets = json.loads(response.text)
+    except Exception as e:
+        print('⚠️ Gemini failed, falling back to OpenAI:', e)
+        import openai
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+        response = openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            messages=[{"role": "user", "content": prompt}]
+        )
+        tweets = json.loads(response.choices[0].message.content)
+
+    sia = SentimentIntensityAnalyzer()
+    positive_tweets = [t for t in tweets if sia.polarity_scores(t)['compound'] > 0.1][:20]  # limit to 20
+
+    with open('scheduled_tweets.json', 'w') as f:
+        json.dump({"date": datetime.now().strftime('%Y-%m-%d'), "tweets": positive_tweets}, f)
+          "
+
+      - name: Post scheduled tweet
+        env:
+          TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
+          TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+        run: |
+          python -c "
+import tweepy, json, os
+from datetime import datetime
+from pathlib import Path
+
+with open('scheduled_tweets.json') as f:
+    data = json.load(f)
+    tweets = data['tweets'][:20]  # ensure maximum of 20
+
+index = datetime.utcnow().hour - 4
+if index < 0 or index >= len(tweets):
+    print('No tweet scheduled for this hour.')
+    exit(0)
+
+tweet = tweets[index]
+
+client = tweepy.Client(
+    consumer_key=os.getenv('TWITTER_CONSUMER_KEY'),
+    consumer_secret=os.getenv('TWITTER_CONSUMER_SECRET'),
+    access_token=os.getenv('TWITTER_ACCESS_TOKEN'),
+    access_token_secret=os.getenv('TWITTER_ACCESS_TOKEN_SECRET')
+)
+
+try:
+    client.create_tweet(text=tweet)
+    print('✅ Tweet posted:', tweet)
+except Exception as e:
+    print('❌ Failed to post tweet:', e)
+    exit(1)
+          "
