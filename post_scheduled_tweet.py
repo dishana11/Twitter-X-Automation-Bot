@@ -1,26 +1,26 @@
 import tweepy, json, os
 from datetime import datetime
+from pathlib import Path
 
-# Load scheduled tweets
-with open("scheduled_tweets.json") as f:
+# Load tweets
+output_file = Path("scheduled_tweets.json")
+if not output_file.exists():
+    print("❌ scheduled_tweets.json not found.")
+    exit(1)
+
+with open(output_file) as f:
     data = json.load(f)
+    tweets = data.get("tweets", [])
 
-tweets = data.get("tweets", [])[:5]  # ✅ LIMIT TO 5 tweets
-
-# Determine which tweet to post based on current hour
-# Assuming tweets go out at 5, 8, 11, 14, 17 UTC
-schedule_hours = [5, 8, 11, 14, 17]
-current_hour = datetime.utcnow().hour
-
-try:
-    index = schedule_hours.index(current_hour)
-except ValueError:
+# Determine index
+index = datetime.utcnow().hour - 4  # since your cron starts at 4:30 UTC
+if index < 0 or index >= len(tweets):
     print("⚠️ No tweet scheduled for this hour.")
     exit(0)
 
 tweet = tweets[index]
 
-# Set up Twitter client
+# Setup client
 client = tweepy.Client(
     consumer_key=os.getenv("TWITTER_CONSUMER_KEY"),
     consumer_secret=os.getenv("TWITTER_CONSUMER_SECRET"),
@@ -28,10 +28,10 @@ client = tweepy.Client(
     access_token_secret=os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 )
 
-# Try posting the tweet
+# Post
 try:
     client.create_tweet(text=tweet)
     print("✅ Tweet posted:", tweet)
 except Exception as e:
-    print("❌ Failed to post:", e)
+    print("❌ Failed to post tweet:", e)
     exit(1)
