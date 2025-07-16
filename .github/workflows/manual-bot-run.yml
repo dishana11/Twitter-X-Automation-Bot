@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tweet_prompt:
-        description: 'Describe what your tweet should be about'
+        description: 'Describe the topic or keyword for your tweet(s)—e.g., “Generative AI”'
         required: true
         type: string
       force_post:
@@ -35,16 +35,17 @@ jobs:
         env:
           PROMPT: |
             You are a witty, up-to-date social media content writer for a personal brand in tech.
-            When I give you a keyword or topic (e.g., “Generative AI”), do the following:
+            When I give you a keyword or topic (see below), do the following:
 
             1. Search or simulate searching recent, credible sources (like Hacker News, X.com trends, TechCrunch, Google News) for the latest insights, trends, memes, or updates related to that keyword.
-            2. Generate 1–2 short, highly engaging posts suitable for X.com.
+            2. Generate 1–2 engaging posts suitable for X.com (formerly Twitter).
 
             Each post should:
             - Sound like a real human wrote it (fun, insightful, occasionally sarcastic)
             - Be timely, relatable, and scroll-stopping
+            - Be longer than a typical tweet (aim for 4–6 sentences)
             - Include 3–6 relevant hashtags
-            - Optionally suggest a meme idea or image type (if it fits)
+            - Optionally suggest a meme idea or image type (if it fits the topic)
             - If humor works well with that topic, make one post humorous
 
             Each post should be in the format below:
@@ -53,6 +54,8 @@ jobs:
 
             #hashtag1 #hashtag2 #hashtag3
             [Image suggestion, if any]
+
+            Topic: ${{ inputs.tweet_prompt }}
 
             Example Input:
             User input: Generative AI
