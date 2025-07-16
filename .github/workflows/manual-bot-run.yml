@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tweet_prompt:
-        description: 'Describe the topic or keyword for your tweet(s)—e.g., “Generative AI”'
+        description: 'Enter keyword/topic (e.g., “AGI”)'
         required: true
         type: string
-      force_post:
-        description: 'Force post even if sentiment is not positive'
+      post_choices:
+        description: 'Enter tweet numbers to post (e.g., 1,3,5). Leave blank to only generate.'
         required: false
-        default: false
-        type: boolean
+        default: ''
+        type: string
 
 jobs:
   ai-tweet:
@@ -31,81 +31,69 @@ jobs:
           pip install requests
           pip install -r deploy_requirements.txt
 
-      - name: Generate Tweet with Fallback AI
+      - name: Generate 5 Tweets
         env:
           PROMPT: |
-            You are a witty, up-to-date social media content writer for a personal brand in tech.
-            When I give you a keyword or topic (see below), do the following:
+            You are a witty, up-to-date social media creator for X.com.
+            I will give you a topic or keyword.
 
-            1. Search or simulate searching recent, credible sources (like Hacker News, X.com trends, TechCrunch, Google News) for the latest insights, trends, memes, or updates related to that keyword.
-            2. Generate 1–2 engaging posts suitable for X.com (formerly Twitter).
+            Your task is to:
+            1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
+            2. Generate 5 distinct, scroll-stopping tweet options for the given topic.
+            3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
 
-            Each post should:
-            - Sound like a real human wrote it (fun, insightful, occasionally sarcastic)
-            - Be timely, relatable, and scroll-stopping
-            - Be longer than a typical tweet (aim for 4–6 sentences)
-            - Include 3–6 relevant hashtags
-            - Optionally suggest a meme idea or image type (if it fits the topic)
-            - If humor works well with that topic, make one post humorous
+            Each tweet should:
+            - Be ≤280 characters
+            - Be 4–6 sentences when possible
+            - Include 3–6 smart hashtags
+            - Sound human, not robotic
+            - (Optional) Include meme or image idea
 
-            Each post should be in the format below:
+            Format exactly like this:
 
-            [Post Text]
+            ---
+            Tweet 1:
+            [text]
 
-            #hashtag1 #hashtag2 #hashtag3
-            [Image suggestion, if any]
+            #hashtags
+            Image suggestion: [desc]
+
+            Tweet 2:
+            ...
+            ---
 
             Topic: ${{ inputs.tweet_prompt }}
-
-            Example Input:
-            User input: Generative AI
-
-            Example Output:
-            Post 1 (Insightful):
-
-            Generative AI isn't just drawing pretty faces anymore.
-            It's writing legal drafts, coding apps, and designing molecules.
-            We’re not replacing humans.
-            We’re just forcing them to upskill at light speed. ⚡
-
-            #GenerativeAI #FutureOfWork #AItools #TechTrends #OpenAI #AI
-
-            Image suggestion: Side-by-side comparison of a human and an AI-generated app or image.
-
-            Post 2 (Humorous):
-
-            Boss: “Can you write the report by EOD?”
-            Me: “Already done.”
-            Also me, just pasted the prompt into ChatGPT.
-
-            Generative AI got me on auto-pilot 🚀
-
-            #GenAI #WorkLife #AIMemes #ProductivityHack #RelatableTech
-
-            Image suggestion: A meme of SpongeBob rapidly typing with a glowing laptop.
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_SAMAPI_KEY: ${{ secrets.OPENAI_SAMAPI_KEY }}
-          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python generate_fallback_tweet.py
+          python generate_fallback_tweet.py  # Output 5 tweets to generated_tweets.txt
 
-      - name: Post Tweet
+      - name: Display and Post Selected Tweets
+        if: ${{ inputs.post_choices != '' }}
         env:
           TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
           TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
-          FORCE_POST: ${{ inputs.force_post }}
+          POST_CHOICES: ${{ inputs.post_choices }}
         run: |
-          TWEET_CONTENT=$(cat generated_tweet.txt)
           python -c "
-import tweepy, os
+import tweepy, os, re
 from bot.sentiment_analyzer import SentimentAnalyzer
 from config.settings import get_api_credentials
 
-sentiment_analyzer = SentimentAnalyzer()
+choices = os.getenv('POST_CHOICES').replace(' ', '').split(',')
+selected = set(int(c) for c in choices if c.isdigit())
+
+with open('generated_tweets.txt', 'r') as f:
+    content = f.read()
+
+blocks = re.findall(r'Tweet (\d+):\n(.+?)\n\n#(.*?)\nImage suggestion: (.*?)\n+', content, re.DOTALL)
+
+if not blocks:
+    print('❌ No tweet blocks found in generated_tweets.txt')
+    exit(1)
+
 credentials = get_api_credentials()
 client = tweepy.Client(
     consumer_key=credentials['consumer_key'],
@@ -113,22 +101,33 @@ client = tweepy.Client(
     access_token=credentials['access_token'],
     access_token_secret=credentials['access_token_secret']
 )
-content = '''$TWEET_CONTENT'''
-force = os.getenv('FORCE_POST', 'false').lower() == 'true'
-sentiment_result = sentiment_analyzer.analyze_sentiment(content)
-print(f'Content: {content}')
-print(f'Sentiment: {sentiment_result[\"sentiment\"]} (confidence: {sentiment_result[\"confidence\"]:.3f})')
-should_post = force or sentiment_result['sentiment'] != 'negative' or sentiment_result['confidence'] < 0.5
-if should_post:
+
+sentiment_analyzer = SentimentAnalyzer()
+
+for tweet_num, text, hashtags, image in blocks:
+    if int(tweet_num) not in selected:
+        continue
+
+    tweet = f\"\"\"{text.strip()}
+
+#{hashtags.strip()}\"\"\"
+
+    if len(tweet) > 280:
+        print(f\"⛔ Skipping Tweet {tweet_num}: exceeds character limit ({len(tweet)} characters).\")
+        continue
+
+    sentiment = sentiment_analyzer.analyze_sentiment(tweet)
+    print(f\"Tweet {tweet_num}: {tweet}\")
+    print(f\"Sentiment: {sentiment['sentiment']} (confidence: {sentiment['confidence']:.3f})\")
+
+    if sentiment['sentiment'] == 'negative' and sentiment['confidence'] > 0.5:
+        print(f\"⚠️ Not posting Tweet {tweet_num} due to negative sentiment.\")
+        continue
+
     try:
-        response = client.create_tweet(text=content)
+        response = client.create_tweet(text=tweet)
         tweet_id = response.data['id']
-        print(f'Tweet posted successfully! ID: {tweet_id}')
-        print(f'URL: https://twitter.com/i/web/status/{tweet_id}')
+        print(f\"✅ Tweet {tweet_num} posted: https://twitter.com/i/web/status/{tweet_id}\")
     except Exception as e:
-        print(f'Failed to post: {e}')
-        exit(1)
-else:
-    print('Tweet not posted due to negative sentiment. Use force_post=true to override.')
-    exit(1)
+        print(f\"❌ Error posting Tweet {tweet_num}: {e}\")
 "
