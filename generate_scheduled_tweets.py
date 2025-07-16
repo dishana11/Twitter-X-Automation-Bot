@@ -4,7 +4,7 @@ from pathlib import Path
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 output_file = Path("scheduled_tweets.json")
-today = datetime.now().strftime("%Y-%m-%d")
+today = datetime.utcnow().strftime("%Y-%m-%d")
 
 # Prevent duplicate generation
 if output_file.exists():
@@ -16,46 +16,48 @@ if output_file.exists():
     except json.JSONDecodeError:
         print("⚠️ Corrupted JSON file. Overwriting.")
 
-# ✅ FULL prompt for Gemini/OpenAI
-prompt = '''
-You are an extremely online, witty tech content creator who writes sharp, scroll-stopping tweets for a modern audience on X.com.
+# Prompt for Gemini/OpenAI
+prompt = f"""
+You are a witty, up-to-date social media creator for X.com.
+Your task is to:
+1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
+2. Generate 5 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
+3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
 
-Your job:
-➡️ Create 5 tweets per day.
-➡️ Make sure they’re based on current trending topics, recent tech news, and startup buzz (past 3–5 days).
-➡️ Prioritize positive or witty sentiment only.
+Each tweet should:
+- Be ≤280 characters
+- Be 4–6 sentences when possible
+- Include 3–6 smart hashtags
+- Sound human, not robotic
+- (Optional) Include meme or image idea
 
-Categories to include:
-- 🚀 Trending product launches (e.g., Google, Tesla, Nvidia, Meta, OpenAI)
-- 💸 Recent funding rounds (e.g., Scale AI, Y Combinator startups)
-- 🎯 Career opportunities (e.g., internships, fellowships, hackathons)
-- 😂 Developer humor and tech memes
-- 🧠 AI breakthroughs (e.g., generative AI, new LLMs, AGI trends)
+Format exactly like this:
 
-Each tweet must:
-- Be 1 tweet long (max 280 characters)
-- Be in natural, casual tone (avoid generic robotic phrases)
-- Include 3 relevant hashtags
-- Be unique and different from each other
-- End with a newline if needed for readability
+---
+Tweet 1:
+[text]
 
-Output as a JSON list of 5 tweet strings (no numbering or formatting).
-'''
+#hashtags
+Image suggestion: [desc]
 
-tweets = []
+Tweet 2:
+...
+---
+"""
 
-# ✅ Try Gemini first
+# Use Gemini first
+raw_text = ""
 try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
-    model = genai.GenerativeModel("gemini-pro")  # Correct model name
+    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
     response = model.generate_content(prompt)
-    tweets = json.loads(response.text)
+    raw_text = response.text
 except Exception as e:
     print("⚠️ Gemini failed:", e)
 
-# ✅ Fallback to OpenAI if Gemini fails
-if not tweets:
+# Fallback to OpenAI
+if not raw_text:
     try:
         import openai
         openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -63,17 +65,25 @@ if not tweets:
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
-        tweets = json.loads(response.choices[0].message.content)
+        raw_text = response.choices[0].message.content
     except Exception as e:
         print("❌ OpenAI failed too:", e)
         exit(1)
 
-# ✅ Sentiment filtering
-sia = SentimentIntensityAnalyzer()
-positive = [t for t in tweets if sia.polarity_scores(t)["compound"] > 0.1][:5]
+# Extract tweet text blocks
+import re
+blocks = re.findall(r"Tweet \d+:\n(.+?)\n\n#.*?\nImage suggestion:.*", raw_text, re.DOTALL)
 
-# ✅ Save to file
+if not blocks:
+    print("❌ Failed to parse tweets.")
+    exit(1)
+
+# Sentiment filter
+sia = SentimentIntensityAnalyzer()
+positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.1][:5]
+
+# Save
 with output_file.open("w") as f:
     json.dump({"date": today, "tweets": positive}, f)
 
-print(f"✅ Generated and saved {len(positive)} positive tweets.")
+print(f"✅ Saved {len(positive)} tweets.")
