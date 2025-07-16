@@ -3,10 +3,10 @@ name: Scheduled Daily Posts
 on:
   schedule:
     - cron: '30 4 * * *'
-    - cron: '30 5 * * *'
-    - cron: '30 18 * * *'
-    - cron: '30 19 * * *'
-    - cron: '30 23 * * *'
+    - cron: '30 8 * * *'
+    - cron: '30 12 * * *'
+    - cron: '30 16 * * *'
+    - cron: '30 20 * * *'
   workflow_dispatch:
 
 jobs:
