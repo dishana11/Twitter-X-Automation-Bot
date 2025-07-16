@@ -2,15 +2,15 @@ name: Scheduled Daily Posts
 
 on:
   schedule:
-    - cron: '30 4 * * *'
-    - cron: '30 8 * * *'
-    - cron: '30 12 * * *'
-    - cron: '30 16 * * *'
+    - cron: '30 8 * * *'   # Change times as needed
+    - cron: '30 14 * * *'
     - cron: '30 20 * * *'
+    - cron: '30 2 * * *'
+    - cron: '30 5 * * *'
   workflow_dispatch:
 
 jobs:
-  daily-post:
+  scheduled-ai-tweet:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,26 +25,47 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tweepy requests "openai<1.0.0" google-generativeai nltk
-          if [ -f deploy_requirements.txt ]; then pip install -r deploy_requirements.txt; fi
+          pip install -r deploy_requirements.txt
 
-      - name: Download NLTK data
-        run: |
-          python -c "import nltk; nltk.download('vader_lexicon')"
-
-      - name: Generate content using Gemini (fallback to OpenAI)
+      - name: Generate 5 Scheduled Tweets
         env:
+          PROMPT: |
+            You are a witty, up-to-date social media creator for X.com.
+            Your job is to:
+            1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
+            2. Generate 5 distinct, scroll-stopping tweet options based on trending tech topics.
+            3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
+
+            Each tweet should:
+            - Be ≤280 characters
+            - Be 4–6 sentences when possible
+            - Include 3–6 smart hashtags
+            - Sound human, not robotic
+            - (Optional) Include meme or image idea
+
+            Format exactly like this:
+
+            ---
+            Tweet 1:
+            [text]
+
+            #hashtags
+            Image suggestion: [desc]
+
+            Tweet 2:
+            ...
+            ---
+
           GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python generate_scheduled_tweets.py
+          python generate_fallback_tweet.py --scheduled
 
-      - name: Post scheduled tweet
+      - name: Post Current Scheduled Tweet
         env:
           TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
         run: |
           python post_scheduled_tweet.py
