@@ -11,11 +11,11 @@ if output_file.exists():
         print("✅ Already generated for today.")
         exit(0)
 
-prompt = """
+prompt = '''
 You are an extremely online, witty tech content creator who writes sharp, scroll-stopping tweets for a modern audience on X.com.
 
 Your job:
-➡️ Create 40 tweets per day.
+➡️ Create 5 tweets per day.
 ➡️ Make sure they’re based on current trending topics, recent tech news, and startup buzz (past 3–5 days).
 ➡️ Prioritize positive or witty sentiment only.
 
@@ -33,8 +33,9 @@ Each tweet must:
 - Be unique and different from each other
 - End with a newline if needed for readability
 
-Output as a JSON list of 40 tweet strings (no numbering or formatting).
-"""
+Output as a JSON list of 5 tweet strings (no numbering or formatting).
+'''
+
 
 try:
     import google.generativeai as genai
@@ -53,7 +54,7 @@ except Exception as e:
     tweets = json.loads(response.choices[0].message.content)
 
 sia = SentimentIntensityAnalyzer()
-positive = [t for t in tweets if sia.polarity_scores(t)["compound"] > 0.1][:20]
+positive = [t for t in tweets if sia.polarity_scores(t)["compound"] > 0.1][:5]
 
 with output_file.open("w") as f:
     json.dump({"date": today, "tweets": positive}, f)
