@@ -38,7 +38,7 @@ Output as a JSON list of 40 tweet strings (no numbering or formatting).
 
 try:
     import google.generativeai as genai
-    genai.configure(api_key=os.getenv("GEMINI_KEY"))
+    genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
     model = genai.GenerativeModel("gemini-pro")
     result = model.generate_content(prompt)
     tweets = json.loads(result.text)
