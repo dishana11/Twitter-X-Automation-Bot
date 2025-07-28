@@ -13,21 +13,21 @@ except LookupError:
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Output path
+# Path to store generated tweets
 output_file = Path("scheduled_tweets.json")
 today = datetime.utcnow().strftime("%Y-%m-%d")
 
-# Prevent duplicate generation
+# Avoid regenerating for the same day
 if output_file.exists():
     try:
         existing = json.load(output_file.open())
         if existing.get("date") == today:
-            print("✅ Already generated for today.")
+            print("✅ Tweets already generated for today.")
             exit(0)
     except json.JSONDecodeError:
-        print("⚠️ Corrupted JSON file. Proceeding to overwrite.")
+        print("⚠️ Corrupted JSON file. Will overwrite.")
 
-# Tweet generation prompt
+# Prompt for the LLMs
 prompt = f"""
 You are a witty, up-to-date social media creator for X.com.
 Your task is to:
@@ -74,7 +74,7 @@ try:
 except Exception as e:
     print("⚠️ Gemini failed:", e)
 
-# Fallback: OpenAI
+# Fallback to OpenAI if Gemini fails
 if not raw_text:
     try:
         import openai
@@ -95,7 +95,7 @@ if not raw_text:
         print("❌ Both Gemini and OpenAI failed:", e)
         exit(1)
 
-# Extract tweets from the raw output
+# Extract tweets using regex
 blocks = re.findall(
     r"Tweet \d+:\n(.+?)\n\n#.*?\nImage suggestion:.*",
     raw_text,
@@ -103,22 +103,26 @@ blocks = re.findall(
 )
 
 if not blocks:
-    print("❌ Failed to parse tweets. Raw output:")
+    print("❌ Failed to parse tweets from response. Output was:\n")
     print(raw_text)
     exit(1)
 
-# Filter by sentiment
+# Use sentiment analysis to filter out negative/neutral tweets
 sia = SentimentIntensityAnalyzer()
 positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.1][:5]
 
 if not positive:
-    print("⚠️ No positive tweets found.")
+    print("⚠️ No sufficiently positive tweets found.")
     exit(1)
 
-# Save to JSON
+# Save final output to JSON file
 try:
-    with output_file.open("w") as f:
-        json.dump({"date": today, "tweets": positive}, f, indent=2)
+    with output_file.open("w", encoding="utf-8") as f:
+        json.dump({
+            "date": today,
+            "tweets": positive
+        }, f, indent=2, ensure_ascii=False)
     print(f"✅ Saved {len(positive)} tweets to '{output_file.name}'.")
 except Exception as e:
-    print("❌ Failed to save file:", e)
+    print("❌ Failed to save tweets:", e)
+    exit(1)
