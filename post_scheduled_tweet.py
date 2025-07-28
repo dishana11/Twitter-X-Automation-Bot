@@ -1,48 +1,54 @@
-# post_scheduled_tweet.py
-
 import tweepy
 import os
 from dotenv import load_dotenv
 
-# Load API credentials from .env
+# Load environment variables from .env
 load_dotenv()
 
-auth = tweepy.OAuth1UserHandler(
-    os.getenv("API_KEY"),
-    os.getenv("API_SECRET"),
-    os.getenv("ACCESS_TOKEN"),
-    os.getenv("ACCESS_TOKEN_SECRET")
-)
-api = tweepy.API(auth)
+# Retrieve Twitter credentials from environment
+consumer_key = os.getenv("TWITTER_CONSUMER_KEY")
+consumer_secret = os.getenv("TWITTER_CONSUMER_SECRET")
+access_token = os.getenv("TWITTER_ACCESS_TOKEN")
+access_token_secret = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
-# Read generated tweets
-try:
-    with open("scheduled_tweets.txt", "r", encoding="utf-8") as f:
-        content = f.read()
-except FileNotFoundError:
-    print("❌ Error: scheduled_tweets.txt file not found.")
+# Check if all credentials are present
+if not all([consumer_key, consumer_secret, access_token, access_token_secret]):
+    print("❌ Error: One or more Twitter API credentials are missing in the .env file.")
     exit(1)
 
-# Split tweets using custom delimiter
-raw_tweets = content.split("---TWEET---")[1:]  # Skip the first empty split
+# Set up Tweepy authentication
+try:
+    auth = tweepy.OAuth1UserHandler(
+        consumer_key,
+        consumer_secret,
+        access_token,
+        access_token_secret
+    )
+    api = tweepy.API(auth)
+    api.verify_credentials()
+    print("✅ Twitter authentication successful.")
+except Exception as e:
+    print(f"❌ Twitter authentication failed: {e}")
+    exit(1)
 
-for raw in raw_tweets:
-    try:
-        tweet_block = raw.split("---END---")[0].strip()
-        lines = tweet_block.split("\n")
+# Read and post tweets from scheduled_tweets.txt
+tweet_file = "scheduled_tweets.txt"
 
-        tweet_text = ""
-        for line in lines:
-            if line.startswith("Tweet"):
-                tweet_text = line.replace("Tweet 1:", "").replace("Tweet 2:", "").replace("Tweet 3:", "").replace("Tweet 4:", "").replace("Tweet 5:", "")
-                tweet_text = tweet_text.replace("Tweet:", "").strip()
-                break
+try:
+    with open(tweet_file, "r") as file:
+        tweets = file.readlines()
 
-        if tweet_text:
-            api.update_status(tweet_text)
-            print(f"✅ Tweeted:\n{tweet_text}\n")
-        else:
-            print("⚠️ No tweet content found:\n", tweet_block)
+    if not tweets:
+        print("⚠️ No tweets found in scheduled_tweets.txt.")
+        exit(0)
 
-    except Exception as e:
-        print("❌ Error posting tweet:", e)
+    for tweet in tweets:
+        tweet = tweet.strip()
+        if tweet:
+            try:
+                api.update_status(tweet)
+                print(f"✅ Tweet posted: {tweet}")
+            except Exception as e:
+                print(f"❌ Failed to post tweet: {tweet}\n   ↳ Error: {e}")
+except FileNotFoundError:
+    print(f"❌ File not found: {tweet_file}")
