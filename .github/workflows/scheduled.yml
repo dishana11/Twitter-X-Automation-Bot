@@ -2,16 +2,15 @@ name: Scheduled Daily Posts
 
 on:
   schedule:
-    - cron: '30 8 * * *'
-    - cron: '30 14 * * *'
-    - cron: '30 20 * * *'
-    - cron: '30 2 * * *'
-    - cron: '30 5 * * *'
+    - cron: '30 2 * * *'   # 07:30 AM IST
+    - cron: '30 8 * * *'   # 01:30 PM IST
+    - cron: '30 14 * * *'  # 07:30 PM IST
+    - cron: '30 20 * * *'  # 01:30 AM IST
+    - cron: '30 5 * * *'   # 10:30 AM IST
   workflow_dispatch:
 
 jobs:
   scheduled-ai-tweet:
-    name: Generate & Post Tweet
     runs-on: ubuntu-latest
 
     steps:
@@ -23,25 +22,28 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r deploy_requirements.txt
 
-      - name: Download NLTK data
+      - name: Download NLTK and spaCy data
         run: |
-          python -c "import nltk; nltk.download('vader_lexicon')"
+          python -m nltk.downloader vader_lexicon
+          python -m spacy download en_core_web_sm
 
-      - name: Generate scheduled tweets
+      - name: Generate Scheduled Tweets
         env:
           GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python generate_scheduled_tweets.py
+        run: |
+          python generate_scheduled_tweets.py
 
-      - name: Post scheduled tweet
+      - name: Post Tweet
         env:
           TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-        run: python post_scheduled_tweet.py
+        run: |
+          python post_scheduled_tweet.py
