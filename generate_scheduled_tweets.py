@@ -1,58 +1,128 @@
-# generate_scheduled_tweets.py
-
 import os
-from openai import OpenAI
-from dotenv import load_dotenv
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+import nltk
 
-load_dotenv()
+# Ensure required NLTK data is available
+try:
+    nltk.data.find('sentiment/vader_lexicon.zip')
+except LookupError:
+    nltk.download('vader_lexicon')
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-prompt = """
-Generate 5 funny, sarcastic, or witty tech-related tweets with an optional image suggestion.
-Each tweet should start with 'Tweet 1:', 'Tweet 2:', etc., and include:
-1. The tweet content (max 280 characters).
-2. An image suggestion (optional, start line with "Image suggestion:").
+# Path to store generated tweets
+output_file = Path("scheduled_tweets.json")
+today = datetime.utcnow().strftime("%Y-%m-%d")
 
-Do not include extra text or explanations. Format:
+# Avoid regenerating for the same day
+if output_file.exists():
+    try:
+        existing = json.load(output_file.open())
+        if existing.get("date") == today:
+            print("✅ Tweets already generated for today.")
+            exit(0)
+    except json.JSONDecodeError:
+        print("⚠️ Corrupted JSON file. Will overwrite.")
+
+# Prompt for the LLMs
+prompt = f"""
+You are a witty, up-to-date social media creator for X.com.
+Your task is to:
+1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
+2. Generate 5 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
+3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
+
+Each tweet should:
+- Be ≤280 characters
+- Be 4–6 sentences when possible
+- Include 3–6 smart hashtags
+- Sound human, not robotic
+- (Optional) Include meme or image idea
+
+Format exactly like this:
+
+---
 Tweet 1:
-your tweet
+[text]
 
-Image suggestion: your image idea
+#hashtags
+Image suggestion: [desc]
 
 Tweet 2:
 ...
+---
 """
 
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": prompt}],
-    temperature=0.9,
+# Try Gemini API first
+raw_text = ""
+try:
+    import google.generativeai as genai
+
+    gemini_key = os.getenv("GOOGLE_GEMINI")
+    if not gemini_key:
+        raise ValueError("Missing GOOGLE_GEMINI environment variable")
+
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
+    response = model.generate_content(prompt)
+    raw_text = response.text.strip()
+    print("✅ Gemini generation successful.")
+
+except Exception as e:
+    print("⚠️ Gemini failed:", e)
+
+# Fallback to OpenAI if Gemini fails
+if not raw_text:
+    try:
+        import openai
+
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            raise ValueError("Missing OPENAI_API_KEY environment variable")
+
+        openai.api_key = openai_key
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw_text = response.choices[0].message.content.strip()
+        print("✅ OpenAI generation successful.")
+
+    except Exception as e:
+        print("❌ Both Gemini and OpenAI failed:", e)
+        exit(1)
+
+# Extract tweets using regex
+blocks = re.findall(
+    r"Tweet \d+:\n(.*?)(?:\nImage suggestion:.*?)?(?=\nTweet \d+:|\Z)",
+    raw_text,
+    re.DOTALL
 )
 
-output = response.choices[0].message.content.strip()
-print("✅ Gemini generation successful.\n")
-
-tweets = output.split("Tweet ")[1:]
-
-if not tweets:
-    print("❌ Failed to parse tweets from response. Output was:\n\n", output)
+if not blocks:
+    print("❌ Failed to parse tweets from response. Output was:\n")
+    print(raw_text)
     exit(1)
 
-with open("scheduled_tweets.txt", "w", encoding="utf-8") as f:
-    for tweet in tweets:
-        try:
-            number, content = tweet.split(":", 1)
-            content_parts = content.strip().split("Image suggestion:")
-            tweet_text = content_parts[0].strip()
-            image_text = content_parts[1].strip() if len(content_parts) > 1 else None
+# Use sentiment analysis to filter out negative/neutral tweets
+sia = SentimentIntensityAnalyzer()
+positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.1][:5]
 
-            f.write("---TWEET---\n")
-            f.write(f"Tweet: {tweet_text}\n")
-            if image_text:
-                f.write(f"Image: {image_text}\n")
-            f.write("---END---\n\n")
-        except Exception as e:
-            print(f"⚠️ Error parsing a tweet block:\n{tweet}\n{e}\n")
+if not positive:
+    print("⚠️ No sufficiently positive tweets found.")
+    exit(1)
 
-print("✅ Tweets saved to scheduled_tweets.txt")
+# Save final output to JSON file
+try:
+    with output_file.open("w", encoding="utf-8") as f:
+        json.dump({
+            "date": today,
+            "tweets": positive
+        }, f, indent=2, ensure_ascii=False)
+    print(f"✅ Saved {len(positive)} tweets to '{output_file.name}'.")
+except Exception as e:
+    print("❌ Failed to save tweets:", e)
+    exit(1)
