@@ -1,8 +1,11 @@
-import os, json
+import os
+import json
+import re
 from datetime import datetime
 from pathlib import Path
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
+# Output path
 output_file = Path("scheduled_tweets.json")
 today = datetime.utcnow().strftime("%Y-%m-%d")
 
@@ -14,9 +17,9 @@ if output_file.exists():
             print("✅ Already generated for today.")
             exit(0)
     except json.JSONDecodeError:
-        print("⚠️ Corrupted JSON file. Overwriting.")
+        print("⚠️ Corrupted JSON file. Proceeding to overwrite.")
 
-# Prompt for Gemini/OpenAI
+# Tweet generation prompt
 prompt = f"""
 You are a witty, up-to-date social media creator for X.com.
 Your task is to:
@@ -45,45 +48,69 @@ Tweet 2:
 ---
 """
 
-# Use Gemini first
+# Try Gemini API first
 raw_text = ""
 try:
     import google.generativeai as genai
-    genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
+
+    gemini_key = os.getenv("GOOGLE_GEMINI")
+    if not gemini_key:
+        raise ValueError("Missing GOOGLE_GEMINI environment variable")
+
+    genai.configure(api_key=gemini_key)
     model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
     response = model.generate_content(prompt)
-    raw_text = response.text
+    raw_text = response.text.strip()
+    print("✅ Gemini generation successful.")
+
 except Exception as e:
     print("⚠️ Gemini failed:", e)
 
-# Fallback to OpenAI
+# Fallback: OpenAI
 if not raw_text:
     try:
         import openai
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            raise ValueError("Missing OPENAI_API_KEY environment variable")
+
+        openai.api_key = openai_key
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
-        raw_text = response.choices[0].message.content
+        raw_text = response.choices[0].message.content.strip()
+        print("✅ OpenAI generation successful.")
+
     except Exception as e:
-        print("❌ OpenAI failed too:", e)
+        print("❌ Both Gemini and OpenAI failed:", e)
         exit(1)
 
-# Extract tweet text blocks
-import re
-blocks = re.findall(r"Tweet \d+:\n(.+?)\n\n#.*?\nImage suggestion:.*", raw_text, re.DOTALL)
+# Extract tweets
+blocks = re.findall(
+    r"Tweet \d+:\n(.+?)\n\n#.*?\nImage suggestion:.*",
+    raw_text,
+    re.DOTALL
+)
 
 if not blocks:
-    print("❌ Failed to parse tweets.")
+    print("❌ Failed to parse tweets. Raw output:")
+    print(raw_text)
     exit(1)
 
-# Sentiment filter
+# Filter by sentiment
 sia = SentimentIntensityAnalyzer()
 positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.1][:5]
 
-# Save
-with output_file.open("w") as f:
-    json.dump({"date": today, "tweets": positive}, f)
+if not positive:
+    print("⚠️ No positive tweets found.")
+    exit(1)
 
-print(f"✅ Saved {len(positive)} tweets.")
+# Save JSON
+try:
+    with output_file.open("w") as f:
+        json.dump({"date": today, "tweets": positive}, f, indent=2)
+    print(f"✅ Saved {len(positive)} tweets to '{output_file.name}'.")
+except Exception as e:
+    print("❌ Failed to save file:", e)
