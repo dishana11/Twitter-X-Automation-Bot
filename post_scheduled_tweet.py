@@ -4,6 +4,7 @@ import tweepy
 import os
 from dotenv import load_dotenv
 
+# Load API credentials from .env
 load_dotenv()
 
 auth = tweepy.OAuth1UserHandler(
@@ -14,11 +15,16 @@ auth = tweepy.OAuth1UserHandler(
 )
 api = tweepy.API(auth)
 
-with open("scheduled_tweets.txt", "r", encoding="utf-8") as f:
-    content = f.read()
+# Read generated tweets
+try:
+    with open("scheduled_tweets.txt", "r", encoding="utf-8") as f:
+        content = f.read()
+except FileNotFoundError:
+    print("❌ Error: scheduled_tweets.txt file not found.")
+    exit(1)
 
-# Split tweets using our custom delimiter
-raw_tweets = content.split("---TWEET---")[1:]
+# Split tweets using custom delimiter
+raw_tweets = content.split("---TWEET---")[1:]  # Skip the first empty split
 
 for raw in raw_tweets:
     try:
@@ -27,15 +33,16 @@ for raw in raw_tweets:
 
         tweet_text = ""
         for line in lines:
-            if line.startswith("Tweet:"):
-                tweet_text = line.replace("Tweet:", "").strip()
+            if line.startswith("Tweet"):
+                tweet_text = line.replace("Tweet 1:", "").replace("Tweet 2:", "").replace("Tweet 3:", "").replace("Tweet 4:", "").replace("Tweet 5:", "")
+                tweet_text = tweet_text.replace("Tweet:", "").strip()
                 break
 
         if tweet_text:
             api.update_status(tweet_text)
-            print(f"✅ Tweeted: {tweet_text}")
+            print(f"✅ Tweeted:\n{tweet_text}\n")
         else:
-            print("⚠️ Tweet text not found in block:\n", tweet_block)
+            print("⚠️ No tweet content found:\n", tweet_block)
 
     except Exception as e:
         print("❌ Error posting tweet:", e)
