@@ -3,6 +3,14 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+import nltk
+
+# Ensure required NLTK data is available
+try:
+    nltk.data.find('sentiment/vader_lexicon.zip')
+except LookupError:
+    nltk.download('vader_lexicon')
+
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Output path
@@ -87,7 +95,7 @@ if not raw_text:
         print("❌ Both Gemini and OpenAI failed:", e)
         exit(1)
 
-# Extract tweets
+# Extract tweets from the raw output
 blocks = re.findall(
     r"Tweet \d+:\n(.+?)\n\n#.*?\nImage suggestion:.*",
     raw_text,
@@ -107,7 +115,7 @@ if not positive:
     print("⚠️ No positive tweets found.")
     exit(1)
 
-# Save JSON
+# Save to JSON
 try:
     with output_file.open("w") as f:
         json.dump({"date": today, "tweets": positive}, f, indent=2)
