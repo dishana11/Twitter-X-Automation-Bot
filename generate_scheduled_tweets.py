@@ -38,7 +38,7 @@ Your task is to:
 Each tweet should:
 - Be ≤280 characters
 - Be 4–6 sentences when possible
-- Include 3–6 smart hashtags
+- Include 2 smart hashtags
 - Sound human, not robotic
 - (Optional) Include meme or image idea
 
@@ -46,7 +46,16 @@ Format exactly like this:
 
 ---
 Tweet 1:
-[text]
+[text] try to include space in text like
+_________
+_________
+
+#hastags #hashtaags
+
+if the post is humourous then
+A:
+B:
+#humour # hashtag
 
 #hashtags
 Image suggestion: [desc]
