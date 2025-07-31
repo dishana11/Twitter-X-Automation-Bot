@@ -45,7 +45,7 @@ jobs:
             Each tweet should:
             - Be ≤280 characters
             - Be 4–6 sentences when possible
-            - Include 3–6 smart hashtags
+            - Include 2 smart hashtags
             - Sound human, not robotic
             - (Optional) Include meme or image idea
 
@@ -53,7 +53,18 @@ jobs:
 
             ---
             Tweet 1:
+            format it like 
+            ___ ____
+            __ (content)
+
+
+            #hashtag #hashtag
+            
             [text]
+            or humourous post like this
+            A:
+            B:
+            A:
 
             #hashtags
             Image suggestion: [desc]
