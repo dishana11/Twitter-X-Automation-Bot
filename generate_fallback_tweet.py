@@ -12,7 +12,7 @@ def get_openai_tweet(api_key, prompt):
             content ______ ____ ____
             ________
 
-             hashtags### 
+            hashtags### 
 
             or i humourous
 
