@@ -8,20 +8,7 @@ def get_openai_tweet(api_key, prompt):
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         data = {
             "model": "gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}.Format like 
-            content ______ ____ ____
-            ________
-
-            hashtags### 
-
-            or i humourous
-
-            A:
-            B:
-            A:
-
-            hashtags### 
-            Include trending not more than 2 hashtags."}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}.Format like (break line)content ______ ____ ____ ________ (break line) one line space in between hashtags### or if the humourous post it is then  A:      B:     A: then a line gap hashtags### Include trending not more than 2 hashtags."}]
         }
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
