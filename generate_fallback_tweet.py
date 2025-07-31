@@ -63,7 +63,7 @@ def get_gemini_tweet(api_key, prompt):
     ]
     headers = {"Content-Type": "application/json"}
     body = {
-        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags."}]}]
+        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. don't write the prompt in the tweet and leave a line space after tweet for hashtags Include 2 trending hashtags."}]}]
     }
     for model in models:
         try:
