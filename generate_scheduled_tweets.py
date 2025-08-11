@@ -32,14 +32,15 @@ if output_file.exists():
 prompt = """
 You are a witty, up-to-date social media creator for X.com.
 Your task is to:
-1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
+1. Simulate searching renaul car companies etc Google News, Hacker News, X.com Trends, and TechCrunch.
 2. Generate 5 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
 3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
+4.generate single line posts with pure code related humour or talking about cs facts like neural networks gen ai agentic ai holographic principle etc.
 
 Each tweet should:
 - Be ≤280 characters
 - Be 4–6 sentences when possible
-- Include 2 smart hashtags
+- Include 1 smart hashtags
 - Sound human, not robotic
 - (Optional) Include meme or image idea
 
@@ -47,7 +48,7 @@ Format exactly like this:
 ---
 Tweet 1:
 [text]
-#hashtag1 #hashtag2
+#hashtag1 
 Image suggestion: [desc]
 
 Tweet 2:
@@ -110,9 +111,9 @@ for batch in range(num_batches):
         time.sleep(10)  # Delay for rate limits
         continue
 
-    # Extract tweets using regex
+    # Extract tweets using regex, excluding Image suggestion
     blocks = re.findall(
-        r"Tweet \d+:\n(.*?)(?=\nTweet \d+:|\Z)",
+        r"Tweet \d+:\n((?:.*?\n)*?)(?=\nImage suggestion:|\nTweet \d+:|\Z)",
         raw_text,
         re.DOTALL
     )
@@ -124,7 +125,7 @@ for batch in range(num_batches):
     # Filter tweets
     for t in blocks:
         tweet_text = t.strip()
-        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > -0.1:
+        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > -0.3:
             all_tweets.append(tweet_text)
             seen.add(tweet_text)
 
