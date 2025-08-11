@@ -1,6 +1,7 @@
 import os
 import json
 import tweepy
+import argparse
 from pathlib import Path
 
 # ==== CONFIG ====
@@ -76,8 +77,8 @@ def get_llm_tweet():
     return None
 
 
-def post_tweet():
-    """Post one tweet from schedule and remove it."""
+def post_tweets(count):
+    """Post multiple tweets from schedule or generate if needed."""
     if SCHEDULE_FILE.exists():
         try:
             with SCHEDULE_FILE.open("r", encoding="utf-8") as f:
@@ -88,32 +89,38 @@ def post_tweet():
     else:
         tweets = []
 
-    # If empty, try generating one
-    if not tweets:
-        print("⚠️ No scheduled tweets found — generating one...")
-        tweet = get_llm_tweet()
-        if not tweet:
-            print("❌ All LLMs failed — no tweet posted.")
-            return
-    else:
-        tweet = tweets.pop(0)
+    posted_count = 0
+    for _ in range(count):
+        if tweets:
+            tweet = tweets.pop(0)
+        else:
+            print("⚠️ No scheduled tweet found — generating one...")
+            tweet = get_llm_tweet()
+            if not tweet:
+                print("❌ All LLMs failed — skipping.")
+                continue
 
-    # Post to Twitter
-    try:
-        api.update_status(tweet)
-        print(f"✅ Posted: {tweet}")
-    except Exception as e:
-        print(f"❌ Error posting tweet: {e}")
-        return
+        try:
+            api.update_status(tweet)
+            print(f"✅ Posted: {tweet}")
+            posted_count += 1
+        except Exception as e:
+            print(f"❌ Error posting tweet: {e}")
+            continue
 
     # Save remaining tweets
     if tweets:
         with SCHEDULE_FILE.open("w", encoding="utf-8") as f:
             json.dump({"date": data.get("date", ""), "tweets": tweets}, f, indent=2, ensure_ascii=False)
     else:
-        # Remove file if empty
         SCHEDULE_FILE.unlink(missing_ok=True)
+
+    print(f"📢 Finished posting {posted_count} tweet(s).")
 
 
 if __name__ == "__main__":
-    post_tweet()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--count", type=int, default=1, help="Number of tweets to post")
+    args = parser.parse_args()
+
+    post_tweets(args.count)
