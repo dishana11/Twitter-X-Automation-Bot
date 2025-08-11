@@ -29,11 +29,11 @@ if output_file.exists():
         print("⚠️ Corrupted JSON file. Will overwrite.")
 
 # Prompt for LLMs
-prompt = f"""
+prompt = """
 You are a witty, up-to-date social media creator for X.com.
 Your task is to:
 1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
-2. Generate 10 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
+2. Generate 5 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
 3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
 
 Each tweet should:
@@ -44,21 +44,10 @@ Each tweet should:
 - (Optional) Include meme or image idea
 
 Format exactly like this:
-
 ---
 Tweet 1:
-[text] try to include space in text like
-_________
-_________
-
-#hastags #hashtaags
-
-if the post is humourous then
-A:
-B:
-#humour # hashtag
-
-#hashtags
+[text]
+#hashtag1 #hashtag2
 Image suggestion: [desc]
 
 Tweet 2:
@@ -71,35 +60,33 @@ sia = SentimentIntensityAnalyzer()
 all_tweets = []
 seen = set()
 batch_size = 5  # Smaller batch size for free plan limits
-num_batches = 20  # 20 batches * 5 tweets = 100 tweets, allowing for free tier request limits
+num_batches = 20  # 20 batches * 5 tweets = 100 tweets
+
+# Validate environment variables
+required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
+for env in required_env:
+    if not os.getenv(env):
+        print(f"❌ Missing environment variable: {env}")
+        exit(1)
 
 # Try Gemini API first
 raw_text = ""
 try:
     import google.generativeai as genai
-
-    gemini_key = os.getenv("GOOGLE_GEMINI")
-    if not gemini_key:
-        raise ValueError("Missing GOOGLE_GEMINI environment variable")
-
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
-
+    genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
+    model = genai.GenerativeModel("gemini-1.5-pro-latest")
 except Exception as e:
-    print("⚠️ Gemini failed:", e)
+    print(f"⚠️ Gemini setup failed: {e}")
 
 # Fallback to OpenAI if Gemini fails
-if not 'model' in locals():
+if 'model' not in locals():
     try:
         import openai
-
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            raise Value Value("Missing OPENAI_API_KEY environment variable")
-
-        openai.api_key = openai_key
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        if not openai.api_key:
+            raise ValueError("Missing OPENAI_API_KEY environment variable")
     except Exception as e:
-        print("❌ Both Gemini and OpenAI failed:", e)
+        print(f"❌ Both Gemini and OpenAI setup failed: {e}")
         exit(1)
 
 # Batch generation to respect free plan limits
@@ -109,56 +96,59 @@ for batch in range(num_batches):
         if 'model' in locals():
             response = model.generate_content(prompt)
             raw_text = response.text.strip()
-            print("✅ Gemini generation successful.")
+            print(f"✅ Gemini batch {batch + 1} successful.")
         else:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1500
             )
             raw_text = response.choices[0].message.content.strip()
-            print("✅ OpenAI generation successful.")
-
+            print(f"✅ OpenAI batch {batch + 1} successful.")
     except Exception as e:
-        print("❌ LLM failed in batch {batch + 1}:", e)
-        time.sleep(10)  # Delay for rate limits in free plan
+        print(f"❌ Batch {batch + 1} failed: {e}")
+        time.sleep(10)  # Delay for rate limits
         continue
 
     # Extract tweets using regex
     blocks = re.findall(
-        r"Tweet \d+:\n(.*?)(?:\nImage suggestion:.*?)?(?=\nTweet \d+:|\Z)",
+        r"Tweet \d+:\n(.*?)(?=\nTweet \d+:|\Z)",
         raw_text,
         re.DOTALL
     )
 
     if not blocks:
-        print("❌ Failed to parse tweets from response in batch {batch + 1}. Output was:\n")
-        print(raw_text)
+        print(f"❌ Failed to parse tweets in batch {batch + 1}. Output was:\n{raw_text}")
         continue
 
-    # Use sentiment analysis to filter out negative/neutral tweets
-    positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.0]  # Loosened to > 0.0 for more tweets
+    # Filter tweets
+    for t in blocks:
+        tweet_text = t.strip()
+        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > -0.1:
+            all_tweets.append(tweet_text)
+            seen.add(tweet_text)
 
-    # Add unique tweets
-    for t in positive:
-        if t not in seen and len(all_tweets) < 100:
-            all_tweets.append(t)
-            seen.add(t)
+    # Stop if enough tweets
+    if len(all_tweets) >= 100:
+        break
 
     # Delay to respect free plan rate limits
     time.sleep(5)
 
-    # Stop if we have enough
-    if len(all_tweets) >= 100:
-        break
-
-# Ensure ~100 tweets with fallback if needed
+# Fallback tweets if <100
+default_tweets = [
+    "AI is transforming tech daily! What's the next big thing? #AI #Innovation",
+    "Startups are pushing boundaries. What's your favorite tool? #Startups #TechTrends",
+    "Coding is the new superpower! Ready to build the future? #Coding #Tech",
+    "Tech moves fast—stay ahead with the latest tools! #Innovation #Startups"
+]
 while len(all_tweets) < 100:
-    fallback = get_llm_tweet()  # Assume fallback function from post_scheduled_tweet.py or simple default
-    if fallback and fallback not in seen:
+    fallback = default_tweets[len(all_tweets) % len(default_tweets)]
+    if fallback not in seen:
         all_tweets.append(fallback)
         seen.add(fallback)
 
-# Save final output to JSON file
+# Save to JSON
 try:
     with output_file.open("w", encoding="utf-8") as f:
         json.dump({
@@ -167,5 +157,5 @@ try:
         }, f, indent=2, ensure_ascii=False)
     print(f"✅ Saved {len(all_tweets[:100])} tweets to '{output_file.name}'.")
 except Exception as e:
-    print("❌ Failed to save tweets:", e)
+    print(f"❌ Failed to save tweets: {e}")
     exit(1)
