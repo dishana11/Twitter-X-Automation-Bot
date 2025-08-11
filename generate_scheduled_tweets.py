@@ -1,11 +1,13 @@
 import os
 import json
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 import nltk
+from tenacity import retry, stop_after_attempt, wait_fixed
 
-# Ensure required NLTK data is available
+# Ensure required NLTK data
 try:
     nltk.data.find('sentiment/vader_lexicon.zip')
 except LookupError:
@@ -13,8 +15,9 @@ except LookupError:
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Path to store generated tweets
+# Path to store tweets
 output_file = Path("scheduled_tweets.json")
+log_file = Path("tweet_gen_log.txt")
 today = datetime.utcnow().strftime("%Y-%m-%d")
 
 # Avoid regenerating for the same day
@@ -27,12 +30,12 @@ if output_file.exists():
     except json.JSONDecodeError:
         print("⚠️ Corrupted JSON file. Will overwrite.")
 
-# Prompt for the LLMs
-prompt = f"""
+# Prompt for LLMs
+prompt = """
 You are a witty, up-to-date social media creator for X.com.
 Your task is to:
 1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
-2. Generate 5 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
+2. Generate 10 distinct, scroll-stopping tweet options on recent trending tech/startup topics.
 3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
 
 Each tweet should:
@@ -46,18 +49,8 @@ Format exactly like this:
 
 ---
 Tweet 1:
-[text] try to include space in text like
-_________
-_________
-
-#hastags #hashtaags
-
-if the post is humourous then
-A:
-B:
-#humour # hashtag
-
-#hashtags
+[text]
+#hashtag1 #hashtag2
 Image suggestion: [desc]
 
 Tweet 2:
@@ -65,73 +58,122 @@ Tweet 2:
 ---
 """
 
-# Try Gemini API first
-raw_text = ""
-try:
-    import google.generativeai as genai
+# Initialize sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+all_tweets = []
+seen = set()
+batch_size = 10
+num_batches = 12  # Allow extra batches for failures
 
-    gemini_key = os.getenv("GOOGLE_GEMINI")
-    if not gemini_key:
-        raise ValueError("Missing GOOGLE_GEMINI environment variable")
-
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")
-    response = model.generate_content(prompt)
-    raw_text = response.text.strip()
-    print("✅ Gemini generation successful.")
-
-except Exception as e:
-    print("⚠️ Gemini failed:", e)
-
-# Fallback to OpenAI if Gemini fails
-if not raw_text:
-    try:
-        import openai
-
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if not openai_key:
-            raise ValueError("Missing OPENAI_API_KEY environment variable")
-
-        openai.api_key = openai_key
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw_text = response.choices[0].message.content.strip()
-        print("✅ OpenAI generation successful.")
-
-    except Exception as e:
-        print("❌ Both Gemini and OpenAI failed:", e)
+# Validate environment variables
+required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
+for env in required_env:
+    if not os.getenv(env):
+        print(f"❌ Missing environment variable: {env}")
+        with open(log_file, "a") as f:
+            f.write(f"{datetime.utcnow()}: Missing env var {env}\n")
         exit(1)
 
-# Extract tweets using regex
-blocks = re.findall(
-    r"Tweet \d+:\n(.*?)(?:\nImage suggestion:.*?)?(?=\nTweet \d+:|\Z)",
-    raw_text,
-    re.DOTALL
-)
+# Retry decorator for API calls
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(10))
+def call_gemini(prompt):
+    import google.generativeai as genai
+    genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
+    model = genai.GenerativeModel("gemini-1.5-pro")
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
-if not blocks:
-    print("❌ Failed to parse tweets from response. Output was:\n")
-    print(raw_text)
-    exit(1)
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(10))
+def call_openai(prompt):
+    import openai
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=3000
+    )
+    return response.choices[0].message.content.strip()
 
-# Use sentiment analysis to filter out negative/neutral tweets
-sia = SentimentIntensityAnalyzer()
-positive = [t.strip() for t in blocks if sia.polarity_scores(t)["compound"] > 0.1][:5]
+# Batch generation
+for batch in range(num_batches):
+    print(f"Generating batch {batch + 1}/{num_batches}...")
+    raw_text = ""
+    
+    # Try Gemini API first
+    try:
+        raw_text = call_gemini(prompt)
+        print(f"✅ Gemini batch {batch + 1} successful.")
+        with open(log_file, "a") as f:
+            f.write(f"{datetime.utcnow()}: Gemini batch {batch + 1} success\n")
+    except Exception as e:
+        print(f"⚠️ Gemini batch {batch + 1} failed: {e}")
+        with open(log_file, "a") as f:
+            f.write(f"{datetime.utcnow()}: Gemini batch {batch + 1} failed: {e}\n")
 
-if not positive:
-    print("⚠️ No sufficiently positive tweets found.")
-    exit(1)
+    # Fallback to OpenAI
+    if not raw_text:
+        try:
+            raw_text = call_openai(prompt)
+            print(f"✅ OpenAI batch {batch + 1} successful.")
+            with open(log_file, "a") as f:
+                f.write(f"{datetime.utcnow()}: OpenAI batch {batch + 1} success\n")
+        except Exception as e:
+            print(f"❌ OpenAI batch {batch + 1} failed: {e}")
+            with open(log_file, "a") as f:
+                f.write(f"{datetime.utcnow()}: OpenAI batch {batch + 1} failed: {e}\n")
+            continue
 
-# Save final output to JSON file
+    # Extract tweets with robust regex
+    blocks = re.findall(
+        r"Tweet \d+:\n\s*(.*?)(?=\n\s*Tweet \d+:|\Z)",
+        raw_text,
+        re.DOTALL
+    )
+
+    if not blocks:
+        print(f"❌ Failed to parse tweets in batch {batch + 1}. Skipping.")
+        with open(log_file, "a") as f:
+            f.write(f"{datetime.utcnow()}: Failed to parse batch {batch + 1}\n")
+        continue
+
+    # Filter tweets
+    for t in blocks:
+        tweet_text = t.strip()
+        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > 0.0:
+            all_tweets.append(tweet_text)
+            seen.add(tweet_text)
+
+    # Stop early if we have enough tweets
+    if len(all_tweets) >= 100:
+        break
+
+    # Avoid rate limits
+    if batch < num_batches - 1:
+        time.sleep(5)
+
+# Limit to 100 tweets
+tweets = all_tweets[:100]
+print(f"📝 Total unique positive tweets generated: {len(tweets)}")
+with open(log_file, "a") as f:
+    f.write(f"{datetime.utcnow()}: Generated {len(tweets)} tweets\n")
+
+if len(tweets) < 100:
+    print(f"⚠️ Only {len(tweets)} positive, unique tweets generated. Consider loosening sentiment threshold or increasing batches.")
+    with open(log_file, "a") as f:
+        f.write(f"{datetime.utcnow()}: Warning: Only {len(tweets)} tweets generated\n")
+
+# Save to JSON
 try:
     with output_file.open("w", encoding="utf-8") as f:
         json.dump({
             "date": today,
-            "tweets": positive
+            "tweets": tweets
         }, f, indent=2, ensure_ascii=False)
-    print(f"✅ Saved {len(positive)} tweets to '{output_file.name}'.")
+    print(f"✅ Saved {len(tweets)} tweets to '{output_file.name}'.")
+    with open(log_file, "a") as f:
+        f.write(f"{datetime.utcnow()}: Saved {len(tweets)} tweets to {output_file.name}\n")
 except Exception as e:
-    print("❌ Failed to save tweets:", e)
+    print(f"❌ Failed to save tweets: {e}")
+    with open(log_file, "a") as f:
+        f.write(f"{datetime.utcnow()}: Failed to save tweets: {e}\n")
     exit(1)
