@@ -4,102 +4,46 @@ import tweepy
 import argparse
 from pathlib import Path
 
-# ==== CONFIG ====
+# Config
 SCHEDULE_FILE = Path("scheduled_tweets.json")
 
-# ==== TWITTER AUTH ====
+# Twitter Auth
 auth = tweepy.OAuth1UserHandler(
     os.getenv("TWITTER_CONSUMER_KEY"),
     os.getenv("TWITTER_CONSUMER_SECRET"),
     os.getenv("TWITTER_ACCESS_TOKEN"),
     os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 )
-api = tweepy.API(auth)
-
-
-def get_llm_tweet():
-    """Fallback tweet generator if schedule file is empty."""
-    prompt = (
-        "Write a short, casual tweet in the style:\n"
-        "1st person thoughts\n"
-        "Techy / curious tone\n"
-        "No emojis\n"
-        "One hashtag at the end"
-    )
-
-    # --- Gemini ---
-    try:
-        from google.generativeai import GenerativeModel, configure
-        configure(api_key=os.getenv("GOOGLE_GEMINI"))
-        model = GenerativeModel("gemini-2.0-pro")
-        resp = model.generate_content(prompt)
-        return resp.text.strip()
-    except Exception:
-        pass
-
-    # --- OpenAI ---
-    try:
-        import openai
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        resp = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return resp.choices[0].message.content.strip()
-    except Exception:
-        pass
-
-    # --- OpenAI SAM ---
-    try:
-        import openai
-        openai.api_key = os.getenv("OPENAI_SAM_KEY")
-        resp = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return resp.choices[0].message.content.strip()
-    except Exception:
-        pass
-
-    # --- Claude ---
-    try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
-        resp = client.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return resp.content[0].text.strip()
-    except Exception:
-        pass
-
-    return None
-
+api = tweepy.API(auth, wait_on_rate_limit=True)
 
 def post_tweets(count):
-    """Post multiple tweets from schedule or generate if needed."""
-    if SCHEDULE_FILE.exists():
-        try:
-            with SCHEDULE_FILE.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-            tweets = data.get("tweets", [])
-        except json.JSONDecodeError:
-            tweets = []
-    else:
-        tweets = []
+    """Post tweets from schedule."""
+    if not SCHEDULE_FILE.exists():
+        print("❌ No scheduled tweets found.")
+        return 0
+
+    try:
+        with SCHEDULE_FILE.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        tweets = data.get("tweets", [])
+    except json.JSONDecodeError:
+        print("❌ Corrupted JSON file.")
+        return 0
+
+    # Check Twitter API rate limits
+    try:
+        rate_limit = api.rate_limit_status()
+        remaining = rate_limit['resources']['statuses']['/statuses/update']['remaining']
+        if remaining < count:
+            print(f"⚠️ Rate limit too low: {remaining} remaining, need {count}")
+            return 0
+    except Exception as e:
+        print(f"❌ Error checking rate limits: {e}")
+        return 0
 
     posted_count = 0
-    for _ in range(count):
-        if tweets:
-            tweet = tweets.pop(0)
-        else:
-            print("⚠️ No scheduled tweet found — generating one...")
-            tweet = get_llm_tweet()
-            if not tweet:
-                print("❌ All LLMs failed — skipping.")
-                continue
-
+    for _ in range(min(count, len(tweets))):
+        tweet = tweets.pop(0)
         try:
             api.update_status(tweet)
             print(f"✅ Posted: {tweet}")
@@ -116,7 +60,7 @@ def post_tweets(count):
         SCHEDULE_FILE.unlink(missing_ok=True)
 
     print(f"📢 Finished posting {posted_count} tweet(s).")
-
+    return posted_count
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
