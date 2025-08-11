@@ -1,0 +1,15 @@
+2025-08-11 18:47:26.567963: Gemini batch 1 success
+2025-08-11 18:47:46.454313: Gemini batch 2 success
+2025-08-11 18:48:05.751367: Gemini batch 3 success
+2025-08-11 18:48:23.678463: Gemini batch 4 success
+2025-08-11 18:48:42.584474: Gemini batch 5 success
+2025-08-11 18:49:02.171084: Gemini batch 6 success
+2025-08-11 18:49:21.357987: Gemini batch 7 success
+2025-08-11 18:49:41.163960: Gemini batch 8 success
+2025-08-11 18:49:58.669487: Gemini batch 9 success
+2025-08-11 18:50:17.368925: Gemini batch 10 success
+2025-08-11 18:50:37.787043: Gemini batch 11 success
+2025-08-11 18:50:57.848289: Gemini batch 12 success
+2025-08-11 18:50:57.849232: Generated 33 tweets
+2025-08-11 18:50:57.849267: Warning: Only 33 tweets generated
+2025-08-11 18:50:57.849505: Saved 33 tweets to scheduled_tweets.json
