@@ -26,7 +26,7 @@ for env in required_env:
             f.write(f"{datetime.utcnow()}: Missing env var {env}\n")
         exit(1)
 
-# Initialize Twitter API (v1.1 for media upload, v2 for posting)
+# Initialize Twitter API
 auth = tweepy.OAuth1UserHandler(
     consumer_key=os.getenv("TWITTER_CONSUMER_KEY"),
     consumer_secret=os.getenv("TWITTER_CONSUMER_SECRET"),
@@ -63,6 +63,17 @@ def generate_image(prompt):
         return tmp_file.name, url
     except Exception as e:
         print(f"❌ Image generation failed: {e}")
+        raise  # Let tenacity handle retries
+
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+def post_tweet(client, text, media_ids=None):
+    """Post a tweet with optional media."""
+    try:
+        if media_ids:
+            return client.create_tweet(text=text, media_ids=media_ids)
+        return client.create_tweet(text=text)
+    except Exception as e:
+        print(f"❌ Tweet posting failed: {e}")
         raise  # Let tenacity handle retries
 
 def post_tweets(count):
@@ -111,10 +122,7 @@ def post_tweets(count):
                     f.write(f"{datetime.utcnow()}: Image upload failed: {e}\n")
 
         try:
-            if media_ids:
-                response = client_v2.create_tweet(text=text, media_ids=media_ids)
-            else:
-                response = client_v2.create_tweet(text=text)
+            response = post_tweet(client_v2, text, media_ids)
             tweet_id = response.data['id']
             print(f"✅ Posted: {text} (ID: {tweet_id})")
             with open(LOG_FILE, "a", encoding="utf-8") as f:
