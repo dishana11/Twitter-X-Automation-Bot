@@ -8,7 +8,7 @@ def get_openai_tweet(api_key, prompt):
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         data = {
             "model": "gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}.Format like (break line)content ______ ____ ____ ________ (break line) one line space in between hashtags### or if the humourous post it is then  A:      B:     A: then a line gap hashtags### Include trending not more than 2 hashtags."}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. Tweet should be like tweet content ______\n\nLeave two line gaps then two hashtags less than 28 characters, engaging, humorous, or techy. Search across the internet for the latest fact, can include NVIDIA or other famous company names but doesn't have to. Don't sound robotic."}]
         }
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -23,7 +23,7 @@ def get_claude_tweet(api_key, prompt):
         data = {
             "model": "claude-3-sonnet-20240229",
             "max_tokens": 150,
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags."}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. Tweet should be like tweet content ______\n\nLeave two line gaps then two hashtags less than 28 characters, engaging, humorous, or techy. Search across the internet for the latest fact, can include NVIDIA or other famous company names but doesn't have to. Don't sound robotic."}]
         }
         resp = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -43,7 +43,7 @@ def get_openrouter_tweet(api_key, prompt):
         }
         data = {
             "model": "anthropic/claude-3-sonnet:beta",
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags."}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. Tweet should be like tweet content ______\n\nLeave two line gaps then two hashtags less than 28 characters, engaging, humorous, or techy. Search across the internet for the latest fact, can include NVIDIA or other famous company names but doesn't have to. Don't sound robotic."}]
         }
         resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -63,7 +63,7 @@ def get_gemini_tweet(api_key, prompt):
     ]
     headers = {"Content-Type": "application/json"}
     body = {
-        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. don't write the prompt in the tweet and leave a line space after tweet for hashtags Include 2 trending hashtags."}]}]
+        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. Tweet should be like tweet content ______\n\nLeave two line gaps then two hashtags less than 28 characters, engaging, humorous, or techy. Search across the internet for the latest fact, can include NVIDIA or other famous company names but doesn't have to. Don't sound robotic."}]}]
     }
     for model in models:
         try:
