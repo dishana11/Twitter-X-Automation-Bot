@@ -31,35 +31,30 @@ if output_file.exists():
 # Prompt for LLMs
 prompt = """
 You are a witty, casual social media creator who writes posts for platforms like X.com (Twitter) and LinkedIn. Your posts should be:
-- Mostly short, punchy, and humorous one-liners or quick observations.
+- Mostly short, punchy, and humorous one-liners or quick observations.Don't include the prompt in the post only content and then hashtag with two line gap after content this is mandatory 
 - But also include some longer, paragraph-style posts with jokes, commentary, or stories.
 - Use a natural mix of topics: technology, AI, physics, history, startup/industry news, and fun trivia.
-- Hashtags are optional. If used, include 1 or 2 hashtags with proper spacing (e.g., "#Tech #Innovation") within the post text.
+- Hashtags are optional. If used, include 1 or 2 hashtags with proper spacing (e.g., "#Tech #Innovation").
 - Sometimes include playful or clever wording.
 - Posts should feel human, like a smart friend chatting casually, not robotic or formal.
 - Some posts can start with "Did you know?" or pose a fun question.
-- Include image suggestions for approximately 20% of posts (e.g., 1 in every 5 posts), formatted as:
-  Image suggestion: [describe the image clearly, suitable for generating a visual with AI tools like DALL-E]
+- Include image suggestions after some posts, formatted as:
+  Image suggestion: [describe the image clearly]
 
 Format your output exactly like this, numbering posts sequentially:
-
 ---
 Post 1:
-Grok works nice. #AI #Tech
+[text]
+#hashtag1 #hashtag2
+Image suggestion: [desc]
 
 Post 2:
-Jekyll on GitHub is so cool.
+[text]
+#hashtag
 
 Post 3:
-Did you know? The first computer bug was an actual moth.
-
-Post 4:
-TechCrunch says the foldable phone is back. But is it back-back? Like, can it survive a drop from my pocket without shattering into a million pieces? The jury's still out. #FoldablePhones #TechFail
-Image suggestion: A cartoon of a foldable phone snapping in half.
-
-Post 5:
-Saw on Google News that someone paid millions for an NFT of a pixelated rock. I just picked one up from my backyard for free. Anyone want to make me an offer? #NFTMadness #RockSolidInvestment
-Image suggestion: A picture of a regular rock next to a pixelated rock NFT.
+[text]
+Image suggestion: [desc]
 ---
 """
 
@@ -67,8 +62,8 @@ Image suggestion: A picture of a regular rock next to a pixelated rock NFT.
 sia = SentimentIntensityAnalyzer()
 all_tweets = []
 seen = set()
-batch_size = 5  # 5 tweets per batch
-num_batches = 25  # Increased to ensure ~100 tweets after filtering
+batch_size = 5  # Smaller batch size for free plan limits
+num_batches = 20  # 20 batches * 5 tweets = 100 tweets
 
 # Validate environment variables
 required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
@@ -122,9 +117,9 @@ for batch in range(num_batches):
     with open("raw_response_log.txt", "a", encoding="utf-8") as f:
         f.write(f"Batch {batch + 1} response:\n{raw_text}\n\n")
 
-    # Extract posts and image suggestions
+    # Extract tweets and image suggestions
     pattern = re.compile(
-        r"Post \d+:\n(.*?)(?:\nImage suggestion: (.*?))?(?=\nPost \d+:|\Z)",
+        r"Post \d+:\n((?:.*?\n)*?)(?:(?:\nImage suggestion: (.*?))?)(?=\nPost \d+:|\Z)",
         re.DOTALL
     )
     matches = pattern.findall(raw_text)
@@ -134,25 +129,31 @@ for batch in range(num_batches):
         continue
 
     # Filter tweets
-    for text, image_suggestion in matches:
-        text = text.strip()
-        image_suggestion = image_suggestion.strip() if image_suggestion else None
-        if (len(text) <= 280 and
-            text not in seen and
-            sia.polarity_scores(text)["compound"] > 0.1):
-            all_tweets.append({"text": text, "image_suggestion": image_suggestion})
-            seen.add(text)
+    for post_text, image_suggestion in matches:
+        tweet_text = post_text.strip()
+        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > 0.1:
+            all_tweets.append({"text": tweet_text, "image_suggestion": image_suggestion or None})
+            seen.add(tweet_text)
 
-    # Stop if we have enough
+    # Stop if enough tweets
     if len(all_tweets) >= 100:
         break
 
     # Delay to respect free plan rate limits
     time.sleep(5)
 
-# Warn if fewer than 100 tweets
-if len(all_tweets) < 100:
-    print(f"⚠️ Generated only {len(all_tweets)} tweets, less than 100. Saving anyway.")
+# Fallback tweets if <100
+default_tweets = [
+    "AI is transforming tech daily! What's the next big thing? #AI #Innovation",
+    "Startups are pushing boundaries. What's your favorite tool? #Startups #TechTrends",
+    "Coding is the new superpower! Ready to build the future? #Coding #Tech",
+    "Tech moves fast—stay ahead with the latest tools! #Innovation #Startups"
+]
+while len(all_tweets) < 100:
+    fallback = default_tweets[len(all_tweets) % len(default_tweets)]
+    if fallback not in seen:
+        all_tweets.append({"text": fallback, "image_suggestion": None})
+        seen.add(fallback)
 
 # Save to JSON
 try:
