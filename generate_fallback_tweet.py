@@ -8,7 +8,7 @@ def get_openai_tweet(api_key, prompt):
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         data = {
             "model": "gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}.  Do not repeat the topic/prompt text directly.Include trending hashtags.MAKE SURE TO LEAVE TWO LINE GAPS BEFORE HASHTAGS. THERE SHOULD BE TWO LINE GAP BETWEEN CONTENT AND HASHTAG tweet should be like tweet content ______  leave TWO line gaps then two hashtags less than 280- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
         }
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -23,7 +23,7 @@ def get_claude_tweet(api_key, prompt):
         data = {
             "model": "claude-3-sonnet-20240229",
             "max_tokens": 150,
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Do not repeat the topic/prompt text directly. Include trending hashtags.MAKE SURE TO LEAVE TWO LINE GAPS BEFORE HASHTAGS. THERE SHOULD BE TWO LINE GAP BETWEEN CONTENT AND HASHTAG tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
         }
         resp = requests.post("https://api.anthropic.com/v1/messages", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -43,7 +43,7 @@ def get_openrouter_tweet(api_key, prompt):
         }
         data = {
             "model": "anthropic/claude-3-sonnet:beta",
-            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
+            "messages": [{"role": "user", "content": f"Write a concise, engaging tweet about: {prompt}. Do not repeat the topic/prompt text directly. Include trending hashtags.MAKE SURE TO LEAVE TWO LINE GAPS BEFORE HASHTAGS. THERE SHOULD BE TWO LINE GAP BETWEEN CONTENT AND HASHTAG tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]
         }
         resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=15)
         resp.raise_for_status()
@@ -63,7 +63,7 @@ def get_gemini_tweet(api_key, prompt):
     ]
     headers = {"Content-Type": "application/json"}
     body = {
-        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. Include trending hashtags. tweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]}]
+        "contents": [{"role": "user", "parts": [{"text": f"Write a concise, engaging tweet about: {prompt}. Do not repeat the topic/prompt text directly. Include trending hashtags. MAKE SURE TO LEAVE TWO LINE GAPS BEFORE HASHTAGS. THERE SHOULD BE TWO LINE GAP BETWEEN CONTENT AND HASHTAGtweet should be like tweet content ______  leave two line gaps then two hashtags less than 28- characters engaging humourous search across internet for latest fact can include nividia or other famous companies names in it doesnt necessarily have to use nividia just make it humourous or techy dont osund robotic"}]}]
     }
     for model in models:
         try:
