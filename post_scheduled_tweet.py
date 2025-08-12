@@ -1,25 +1,39 @@
 import os
 import json
-import tweepy
 import argparse
+import tempfile
+import random
+import requests
+import tweepy
 from pathlib import Path
 from datetime import datetime
+import openai
 
 # Config
 SCHEDULE_FILE = Path("scheduled_tweets.json")
 LOG_FILE = Path("tweet_post_log.txt")
+MAX_IMAGES_PER_RUN = 2
+IMAGE_PROBABILITY = 0.2  # ~20% chance for tweets with image suggestions
 
-# Validate Twitter API credentials
-required_env = ["TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"]
+# Validate environment variables
+required_env = ["TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET",
+                "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET", "OPENAI_API_KEY"]
 for env in required_env:
     if not os.getenv(env):
         print(f"❌ Missing environment variable: {env}")
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"{datetime.utcnow()}: Missing env var {env}\n")
         exit(1)
 
-# Twitter API v2 Client
-client = tweepy.Client(
+# Initialize Twitter API (v1.1 for media upload, v2 for posting)
+auth = tweepy.OAuth1UserHandler(
+    consumer_key=os.getenv("TWITTER_CONSUMER_KEY"),
+    consumer_secret=os.getenv("TWITTER_CONSUMER_SECRET"),
+    access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
+    access_token_secret=os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+)
+api_v1 = tweepy.API(auth, wait_on_rate_limit=True)
+client_v2 = tweepy.Client(
     consumer_key=os.getenv("TWITTER_CONSUMER_KEY"),
     consumer_secret=os.getenv("TWITTER_CONSUMER_SECRET"),
     access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
@@ -27,11 +41,33 @@ client = tweepy.Client(
     wait_on_rate_limit=True
 )
 
+# Initialize OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_image(prompt):
+    """Generate image with DALL-E and return temporary file path."""
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="1024x1024"
+        )
+        url = response['data'][0]['url']
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        tmp_file.write(r.content)
+        tmp_file.close()
+        return tmp_file.name, url
+    except Exception as e:
+        print(f"❌ Image generation failed: {e}")
+        return None, None
+
 def post_tweets(count):
-    """Post tweets from schedule."""
+    """Post tweets from schedule, with images for ~20% of tweets with suggestions."""
     if not SCHEDULE_FILE.exists():
         print("❌ No scheduled tweets found.")
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"{datetime.utcnow()}: No scheduled tweets found\n")
         return 0
 
@@ -41,23 +77,50 @@ def post_tweets(count):
         tweets = data.get("tweets", [])
     except json.JSONDecodeError:
         print("❌ Corrupted JSON file.")
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"{datetime.utcnow()}: Corrupted JSON file\n")
         return 0
 
     posted_count = 0
+    images_posted = 0
+
     for _ in range(min(count, len(tweets))):
         tweet = tweets.pop(0)
+        text = tweet["text"]
+        image_suggestion = tweet.get("image_suggestion")
+
+        media_ids = None
+        if (image_suggestion and
+            images_posted < MAX_IMAGES_PER_RUN and
+            random.random() < IMAGE_PROBABILITY):
+            try:
+                img_path, img_url = generate_image(image_suggestion)
+                if img_path:
+                    media = api_v1.media_upload(img_path)
+                    media_ids = [media.media_id]
+                    images_posted += 1
+                    os.unlink(img_path)
+                    print(f"✅ Generated image: {img_url}")
+                    with open(LOG_FILE, "a", encoding="utf-8") as f:
+                        f.write(f"{datetime.utcnow()}: Generated image: {img_url}\n")
+            except Exception as e:
+                print(f"❌ Image upload failed: {e}")
+                with open(LOG_FILE, "a", encoding="utf-8") as f:
+                    f.write(f"{datetime.utcnow()}: Image upload failed: {e}\n")
+
         try:
-            response = client.create_tweet(text=tweet)
+            if media_ids:
+                response = client_v2.create_tweet(text=text, media_ids=media_ids)
+            else:
+                response = client_v2.create_tweet(text=text)
             tweet_id = response.data['id']
-            print(f"✅ Posted: {tweet} (ID: {tweet_id})")
-            with open(LOG_FILE, "a") as f:
-                f.write(f"{datetime.utcnow()}: Posted tweet: {tweet} (ID: {tweet_id})\n")
+            print(f"✅ Posted: {text} (ID: {tweet_id})")
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(f"{datetime.utcnow()}: Posted tweet: {text} (ID: {tweet_id})\n")
             posted_count += 1
         except Exception as e:
             print(f"❌ Error posting tweet: {e}")
-            with open(LOG_FILE, "a") as f:
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"{datetime.utcnow()}: Error posting tweet: {e}\n")
             continue
 
@@ -67,17 +130,17 @@ def post_tweets(count):
             json.dump({"date": data.get("date", ""), "tweets": tweets}, f, indent=2, ensure_ascii=False)
     else:
         SCHEDULE_FILE.unlink(missing_ok=True)
-        with open(LOG_FILE, "a") as f:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"{datetime.utcnow()}: Deleted empty scheduled_tweets.json\n")
 
-    print(f"📢 Finished posting {posted_count} tweet(s).")
-    with open(LOG_FILE, "a") as f:
-        f.write(f"{datetime.utcnow()}: Finished posting {posted_count} tweet(s)\n")
+    print(f"📢 Finished posting {posted_count} tweet(s), {images_posted} with images.")
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.utcnow()}: Finished posting {posted_count} tweet(s), {images_posted} with images\n")
     return posted_count
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--count", type=int, default=1, help="Number of tweets to post")
+    parser.add_argument("--count", type=int, default=8, help="Number of tweets to post")
     args = parser.parse_args()
 
     post_tweets(args.count)
