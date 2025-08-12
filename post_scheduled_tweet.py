@@ -8,6 +8,7 @@ import tweepy
 from pathlib import Path
 from datetime import datetime
 import openai
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Config
 SCHEDULE_FILE = Path("scheduled_tweets.json")
@@ -44,6 +45,7 @@ client_v2 = tweepy.Client(
 # Initialize OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
 def generate_image(prompt):
     """Generate image with DALL-E and return temporary file path."""
     try:
@@ -61,7 +63,7 @@ def generate_image(prompt):
         return tmp_file.name, url
     except Exception as e:
         print(f"❌ Image generation failed: {e}")
-        return None, None
+        raise  # Let tenacity handle retries
 
 def post_tweets(count):
     """Post tweets from schedule, with images for ~20% of tweets with suggestions."""
@@ -124,7 +126,6 @@ def post_tweets(count):
                 f.write(f"{datetime.utcnow()}: Error posting tweet: {e}\n")
             continue
 
-    # Save remaining tweets
     if tweets:
         with SCHEDULE_FILE.open("w", encoding="utf-8") as f:
             json.dump({"date": data.get("date", ""), "tweets": tweets}, f, indent=2, ensure_ascii=False)
