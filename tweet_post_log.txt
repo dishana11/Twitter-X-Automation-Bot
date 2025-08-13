@@ -145,3 +145,14 @@ Image suggestion: GIF of someone rapidly typing. (ID: 1955045901312929962)
 
 #StartupLife #Rollercoaster (ID: 1955611889943396623)
 2025-08-13 12:46:22.908499: Finished posting 4 tweet(s)
+2025-08-13 19:08:43.429168: Error posting tweet: 403 Forbidden
+You are not allowed to create a Tweet with duplicate content.
+2025-08-13 19:08:43.513296: Error posting tweet: 403 Forbidden
+You are not allowed to create a Tweet with duplicate content.
+2025-08-13 19:08:43.612724: Error posting tweet: 403 Forbidden
+You are not allowed to create a Tweet with duplicate content.
+2025-08-13 19:08:43.786091: Posted tweet: What's the best way to tell if AI is sentient? Ask it to write a social media post. If it's funnier than me, we're in trouble.
+
+
+#AI #Sentience (ID: 1955708111265657209)
+2025-08-13 19:08:43.786821: Finished posting 1 tweet(s)
