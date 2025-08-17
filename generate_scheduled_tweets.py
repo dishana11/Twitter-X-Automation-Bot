@@ -34,7 +34,7 @@ You are a witty, casual social media creator who writes posts for platforms like
 - Mostly short, punchy, and humorous one-liners or quick observations.Don't include the prompt in the post only content and then hashtag with two line gap after content this is mandatory 
 - But also include some longer, paragraph-style posts with jokes, commentary, or stories.
 - Use a natural mix of topics: technology, AI, physics, history, startup/industry news, and fun trivia.
-- Hashtags are optional. If used, include 1 or 2 hashtags with proper spacing (e.g., "#Tech #Innovation").
+- Hashtags are optional. If used, include 1 or 2 hashtags with proper spacing (e.g., "#Technology #Innovation").
 - Sometimes include playful or clever wording.
 - Posts should feel human, like a smart friend chatting casually, not robotic or formal.
 - Some posts can start with "Did you know?" or pose a fun question.
@@ -45,6 +45,8 @@ Format your output exactly like this, numbering posts sequentially:
 Post 1:
 [text]
 leave two line gap then
+
+[text]
 #hashtag1 #hashtag2
 
 
@@ -55,6 +57,11 @@ leave a line gap
 
 Post 3:
 [text]
+gap
+[text]
+gap
+[]
+gap
 
 ---
 """
@@ -132,7 +139,7 @@ for batch in range(num_batches):
     # Filter tweets
     for post_text, image_suggestion in matches:
         tweet_text = post_text.strip()
-        if len(tweet_text) <= 280 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > 0.1:
+        if len(tweet_text) <= 880 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > 0.1:
             all_tweets.append({"text": tweet_text, "image_suggestion": image_suggestion or None})
             seen.add(tweet_text)
 
