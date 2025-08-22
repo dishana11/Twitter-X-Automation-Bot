@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tweet_prompt:
-        description: 'Enter keyword/topic (e.g., “AGI”)'
+        description: 'Enter keyword/topic (e.g., "AGI")'
         required: true
         type: string
       post_choices:
-        description: 'Enter tweet numbers to post (e.g., 1,3,5). Leave blank to only generate.'
+        description: 'Enter a single tweet number to post (e.g., 3). Leave blank to only generate.'
         required: false
         default: ''
         type: string
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git operations
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,117 +30,191 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
           pip install -r deploy_requirements.txt
+          python -m nltk.downloader vader_lexicon
+          python -m spacy download en_core_web_sm
 
       - name: Generate 5 Tweets
         env:
+          GOOGLE_GEMINI: ${{ secrets.GOOGLE_GEMINI }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PROMPT: |
-            You are a witty, up-to-date social media creator for X.com.
-            I will give you a topic or keyword.
+            Write 5 long-form tweets for Twitter/X based on the topic "${{ inputs.tweet_prompt }}". Each tweet must be 500–600 characters. Posts must be unique, avoiding repeated ideas or phrasing from past posts.
 
-            Your task is to:
-            1. Simulate searching Google News, Hacker News, X.com Trends, and TechCrunch.
-            2. Generate 5 distinct, scroll-stopping tweet options for the given topic.
-            3. Use a variety of tones: insightful, funny, sarcastic, trending, and informative.
+            Style Guidelines:
+            - Each tweet must be 500–600 characters.
+            - Use short, punchy lines with frequent line breaks for rhythm.
+            - Use arrows (→) to show flow, contrasts, or steps (e.g., Skills → Portfolio → Clients → Income).
+            - Use contrasts like Results > Certificates, Portfolio > Resume, Execution > Theory.
+            - Each tweet should either: Share a framework (steps, roadmap, method), OR Give a reality check (bold truth that challenges assumptions), OR End with a question/punchline to spark engagement.
+            - No emojis, no hashtags, no images, no fluff. Keep it sharp, professional, and confident.
 
-            Each tweet should:
-            - Be ≤280 characters
-            - Be 4–6 sentences when possible
-            - Include 2 smart hashtags
-            - Sound human, not robotic
-            - (Optional) Include meme or image idea
+            Structure of Each Tweet:
+            - Hook/Statement: Bold opening line.
+            - Breakdown with Arrows: Clear steps or cause/effect.
+            - Contrast: What most people do vs what actually works.
+            - Engagement Question or Punchline: Make the reader reflect or react.
 
-            Format exactly like this:
+            Topics (contextual to "${{ inputs.tweet_prompt }}"):
+            - Freelancing: Client psychology, scaling, mistakes, positioning, earning first 1 lakh, upgrading clients.
+            - Job Hunting: Getting hired faster, referrals, portfolios vs resumes, recruiter mindset, common mistakes.
+            - Skills vs Degrees: What matters in 2025+, why degrees alone won’t save you, proof of work > certificates.
+            - Developer Growth: High-impact dev skills, automation mindset, maintainable code, solving business problems.
+            - Reality Checks: Why people stay stuck, why freelancers stay broke, why job seekers get ignored, why clients undervalue you.
+            - Income Growth: Moving to premium clients, earning more than Tier 1 grads, stacking skills for leverage.
 
+            Format output exactly like this:
             ---
             Tweet 1:
-            format it like 
-            ___ ____
-            __ (content)
-
-
-            #hashtag #hashtag
-            
             [text]
-            or humourous post like this
-            A:
-            B:
-            A:
-
-            #hashtags
-            Image suggestion: [desc]
-
+            
             Tweet 2:
-            ...
+            [text]
+            
+            Tweet 3:
+            [text]
+            
+            Tweet 4:
+            [text]
+            
+            Tweet 5:
+            [text]
             ---
-
-            Topic: ${{ inputs.tweet_prompt }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python generate_fallback_tweet.py  # Output 5 tweets to generated_tweets.txt
+          python -c "
+import os
+import json
+from datetime import datetime
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+try:
+    import google.generativeai as genai
+    genai.configure(api_key=os.getenv('GOOGLE_GEMINI'))
+    model = genai.GenerativeModel('gemini-1.5-pro-latest')
+except:
+    import openai
+    openai.api_key = os.getenv('OPENAI_API_KEY')
 
-      - name: Display and Post Selected Tweets
+prompt = os.getenv('PROMPT')
+try:
+    if 'model' in locals():
+        response = model.generate_content(prompt).text.strip()
+    else:
+        response = openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            messages=[{'role': 'user', 'content': prompt}],
+            max_tokens=1500
+        ).choices[0].message.content.strip()
+except Exception as e:
+    print(f'❌ Error generating tweets: {e}')
+    with open('tweet_gen_log.txt', 'a', encoding='utf-8') as f:
+        f.write(f'{datetime.utcnow()}: Error generating tweets: {e}\n')
+    exit(1)
+
+sia = SentimentIntensityAnalyzer()
+tweets = []
+blocks = response.split('---')[1:-1]
+for block in blocks:
+    tweet_text = block.strip().split('Tweet ')[1][2:].strip()
+    if 500 <= len(tweet_text) <= 600 and sia.polarity_scores(tweet_text)['compound'] > 0.1:
+        tweets.append({'text': tweet_text})
+
+with open('generated_tweets.txt', 'w', encoding='utf-8') as f:
+    for i, tweet in enumerate(tweets[:5], 1):
+        f.write(f'Tweet {i}:\n{tweet[\"text\"]}\n\n')
+print(f'✅ Generated {len(tweets[:5])} tweets to generated_tweets.txt')
+with open('tweet_gen_log.txt', 'a', encoding='utf-8') as f:
+    f.write(f'{datetime.utcnow()}: Generated {len(tweets[:5])} tweets for topic \"${{ inputs.tweet_prompt }}\"\n')
+"
+      - name: Display and Post Selected Tweet
         if: ${{ inputs.post_choices != '' }}
         env:
           TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
           TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
           POST_CHOICES: ${{ inputs.post_choices }}
         run: |
           python -c "
-import tweepy, os, re
-from bot.sentiment_analyzer import SentimentAnalyzer
-from config.settings import get_api_credentials
+import os
+import re
+import tweepy
+from datetime import datetime
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-choices = os.getenv('POST_CHOICES').replace(' ', '').split(',')
-selected = set(int(c) for c in choices if c.isdigit())
+choice = os.getenv('POST_CHOICES').strip()
+if not choice.isdigit() or int(choice) < 1 or int(choice) > 5:
+    print(f'❌ Invalid post_choices: {choice}. Must be a single number between 1 and 5.')
+    with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+        f.write(f'{datetime.utcnow()}: Invalid post_choices: {choice}\n')
+    exit(1)
+selected = int(choice)
 
-with open('generated_tweets.txt', 'r') as f:
+with open('generated_tweets.txt', 'r', encoding='utf-8') as f:
     content = f.read()
 
-blocks = re.findall(r'Tweet (\d+):\n(.+?)\n\n#(.*?)\nImage suggestion: (.*?)\n+', content, re.DOTALL)
+blocks = re.findall(r'Tweet (\d+):\n(.+?)(?=\n\nTweet |\Z)', content, re.DOTALL)
 
 if not blocks:
     print('❌ No tweet blocks found in generated_tweets.txt')
+    with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+        f.write(f'{datetime.utcnow()}: No tweet blocks found in generated_tweets.txt\n')
     exit(1)
 
-credentials = get_api_credentials()
 client = tweepy.Client(
-    consumer_key=credentials['consumer_key'],
-    consumer_secret=credentials['consumer_secret'],
-    access_token=credentials['access_token'],
-    access_token_secret=credentials['access_token_secret']
+    consumer_key=os.getenv('TWITTER_CONSUMER_KEY'),
+    consumer_secret=os.getenv('TWITTER_CONSUMER_SECRET'),
+    access_token=os.getenv('TWITTER_ACCESS_TOKEN'),
+    access_token_secret=os.getenv('TWITTER_ACCESS_TOKEN_SECRET'),
+    wait_on_rate_limit=True
 )
 
-sentiment_analyzer = SentimentAnalyzer()
+sia = SentimentIntensityAnalyzer()
 
-for tweet_num, text, hashtags, image in blocks:
-    if int(tweet_num) not in selected:
+for tweet_num, text in blocks:
+    if int(tweet_num) != selected:
         continue
 
-    tweet = f\"\"\"{text.strip()}
+    tweet = text.strip()
+    if len(tweet) > 600 or len(tweet) < 500:
+        print(f'⛔ Skipping Tweet {tweet_num}: invalid length ({len(tweet)} characters).')
+        with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+            f.write(f'{datetime.utcnow()}: Skipped Tweet {tweet_num}: invalid length ({len(tweet)} characters)\n')
+        exit(1)
 
-#{hashtags.strip()}\"\"\"
+    sentiment = sia.polarity_scores(tweet)
+    print(f'Tweet {tweet_num}: {tweet}')
+    print(f'Sentiment: {sentiment['compound']:.3f}')
 
-    if len(tweet) > 280:
-        print(f\"⛔ Skipping Tweet {tweet_num}: exceeds character limit ({len(tweet)} characters).\")
-        continue
-
-    sentiment = sentiment_analyzer.analyze_sentiment(tweet)
-    print(f\"Tweet {tweet_num}: {tweet}\")
-    print(f\"Sentiment: {sentiment['sentiment']} (confidence: {sentiment['confidence']:.3f})\")
-
-    if sentiment['sentiment'] == 'negative' and sentiment['confidence'] > 0.5:
-        print(f\"⚠️ Not posting Tweet {tweet_num} due to negative sentiment.\")
-        continue
+    if sentiment['compound'] < 0.1:
+        print(f'⚠️ Not posting Tweet {tweet_num} due to low sentiment score.')
+        with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+            f.write(f'{datetime.utcnow()}: Skipped Tweet {tweet_num}: low sentiment score ({sentiment['compound']:.3f})\n')
+        exit(1)
 
     try:
         response = client.create_tweet(text=tweet)
         tweet_id = response.data['id']
-        print(f\"✅ Tweet {tweet_num} posted: https://twitter.com/i/web/status/{tweet_id}\")
+        print(f'✅ Tweet {tweet_num} posted: https://twitter.com/i/web/status/{tweet_id}')
+        with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+            f.write(f'{datetime.utcnow()}: Posted tweet: {tweet} (ID: {tweet_id})\n')
     except Exception as e:
-        print(f\"❌ Error posting Tweet {tweet_num}: {e}\")
+        print(f'❌ Error posting Tweet {tweet_num}: {e}')
+        with open('tweet_post_log.txt', 'a', encoding='utf-8') as f:
+            f.write(f'{datetime.utcnow()}: Error posting tweet: {e}\n')
+        exit(1)
 "
+      - name: Commit Generated Tweets and Logs
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add generated_tweets.txt tweet_post_log.txt tweet_gen_log.txt
+          git commit -m "Add generated tweets and update logs for manual workflow" || echo "No changes to commit"
+          git push origin main
+
+      - name: Notify on Failure
+        if: failure()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: 'Manual tweet generation or posting failed in Twitter-X-Automation-Bot! Check logs.'
