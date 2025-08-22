@@ -1,4 +1,3 @@
-```yaml
 name: Scheduled Frequent Posts
 
 on:
@@ -65,4 +64,3 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           args: 'Scheduled tweet generation or posting failed in Twitter-X-Automation-Bot! Check logs for details.'
-```
