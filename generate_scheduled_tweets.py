@@ -31,35 +31,45 @@ if output_file.exists():
 
 # Prompt for LLMs
 prompt = """
-You are a witty, casual social media creator who writes posts for platforms like X.com and LinkedIn. Your posts must be unique, engaging, and high-quality, ensuring they do not repeat content previously posted (avoid duplicating ideas or phrasing from past posts). Generate exactly 24 posts per day, with the following requirements:
+Write 20 long-form tweets for Twitter/X. Each tweet must be 500–600 characters. Posts must be unique, avoiding repeated ideas, phrasing, or headings from past posts (e.g., no “10x dev” or “degree won’t save you”). Check against previous posts to ensure originality.
 
-- **14 posts/day**: Focus on new intern positions, research positions, career programs, or career internships. Simulate searching job boards, company career pages, and academic sites to find opportunities. Posts must be:
-  - Longer than 280 characters, well-paragraphed (2-3 short paragraphs).
-  - Accurate, professional, and informative (e.g., mention company names like NVIDIA, DeepMind, or others, fields like tech/AI, or program details without links).
-  - Include 1-2 relevant hashtags in the text (e.g., "#Internships #TechCareers").
-  - No links or image suggestions.
-  - Example: "Just found an awesome AI research internship at DeepMind! They’re looking for undergrads with Python skills to work on cutting-edge NLP projects. It’s a 6-month program with mentorship from top researchers. Perfect for anyone wanting to dive into AI! #AIInternships #TechCareers"
+Writing Style Rules:
+- Use short, direct sentences. Break lines often for rhythm and impact.
+- Use arrows (→) to show flow, outcomes, or contrasts (e.g., Skills → Projects → Clients → Money).
+- Use contrasts like Results > Certificates, Portfolio > Resume, Execution > Theory.
+- Each tweet should: Share a framework (steps to achieve something), OR Deliver a reality check (bold truth people ignore), OR End with a question to spark engagement.
+- No emojis, no hashtags, no fluff. Keep it sharp, confident, and thought-leadership style.
 
-- **10 posts/day**: Creative, witty posts about tech, AI, or career advice, styled like these examples:
-  - Example 1: "If you could pick one dev superpower: a) bug-free code first try, b) instant codebase mastery, c) perfect 6-hour workdays, d) auto-negotiated top salaries. What’s your choice? I’m torn between b and c! #TechLife #CareerAdvice"
-  - Example 2: "Your degree gets the interview. Your GitHub gets the callback. Your communication seals the offer. Your learning keeps you promoted. Most stop at step 1. Keep pushing! #CareerGrowth #TechCareers"
-  - Example 3: "AI models like Kling are getting too ‘human’—collapsing complex ideas into mainstream takes. I asked about burnout and it spat back ‘chronic fatigue.’ Nope, not the same. Let’s keep AI open-minded for real insights! #AI #TechInsights"
-  - Posts can be lists, questions, or critiques of AI trends (e.g., models like Kling, VEO, or o3 being overly mainstream or lazy). Longer than 280 characters, 1-2 hashtags in text, no links or image suggestions.
+Structure Each Tweet:
+- Hook/Statement: Bold opening line to grab attention.
+- Breakdown with Arrows: Short phrases separated by arrows or line breaks.
+- Contrast: What people think vs what actually works.
+- Engagement Question or Punchline: Something that leaves the reader thinking.
 
-- Posts should feel human, like a smart friend chatting casually, not robotic or formal.
-- Some posts can start with "Did you know?" or pose a fun question.
-- Ensure variety in topics (tech, AI, physics, history, startups, trivia) and avoid repeating ideas or phrasing from past posts.
+Topics to Cover:
+- Freelancing: Client psychology, scaling, mistakes, positioning, earning first 1 lakh, upgrading clients.
+- Job Hunting: Getting hired faster, referrals, portfolios vs resumes, recruiter mindset, common mistakes.
+- Skills vs Degrees: What matters in 2025+, why degrees alone won’t save you, how proof of work beats certificates.
+- Developer Growth: Becoming a high-impact dev, automation mindset, writing maintainable code, solving business problems.
+- Reality Checks: Why people stay stuck, why freelancers stay broke, why job seekers get ignored, why clients undervalue you.
+- Income Growth: Moving from low-paying to premium clients, earning more than Tier 1 grads, stacking skills for leverage.
 
-Format your output exactly like this, numbering posts sequentially:
+Generate exactly 20 posts per day:
+- 11 posts: Focus on new intern positions, research positions, career programs, or career internships. Simulate searching job boards, company career pages, and academic sites. Include company names (e.g., NVIDIA, DeepMind), fields (e.g., tech/AI), or program details without links. Use arrow-driven, contrast-heavy style. No links or images.
+  - Example: "Found a data science internship at Google! They need undergrads to analyze datasets with Python. It’s a 12-week program with expert mentors. What they want: → Python skills → Data curiosity → Team players. Degrees get you noticed; projects get you hired. Ready to code?"
+- 9 posts: Focus on freelancing, job hunting, skills vs degrees, developer growth, reality checks, or income growth. Use arrow-driven, contrast-heavy style with fresh angles. No links or images.
+  - Example: "Most job seekers fail. They apply → 100 jobs → Generic CVs → No follow-up. Winners do: → Target 10 roles → Build portfolios → Network smartly. Applications don’t win; proof does. How will you show your impact?"
+
+Format output exactly like this, numbering posts sequentially:
 ---
 Post 1:
-[text with hashtags]
+[text]
 
 Post 2:
-[text with hashtags]
+[text]
 
 Post 3:
-[text with hashtags]
+[text]
 ---
 """
 
@@ -80,7 +90,7 @@ if log_file.exists():
         print(f"⚠️ Error reading tweet_post_log.txt: {e}")
 
 batch_size = 5  # Smaller batch size for free plan limits
-num_batches = 5  # 5 batches * 5 tweets = 25 tweets, trimmed to 24
+num_batches = 4  # 4 batches * 5 tweets = 20 tweets
 
 # Validate environment variables
 required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
@@ -145,28 +155,29 @@ for batch in range(num_batches):
     # Filter tweets
     for tweet_text in matches:
         tweet_text = tweet_text.strip()
-        if (len(tweet_text) > 280 and
+        if (len(tweet_text) >= 500 and
+            len(tweet_text) <= 600 and
             tweet_text not in seen and
             sia.polarity_scores(tweet_text)["compound"] > 0.1):
             all_tweets.append({"text": tweet_text})
             seen.add(tweet_text)
 
     # Stop if we have enough
-    if len(all_tweets) >= 24:
+    if len(all_tweets) >= 20:
         break
 
     # Delay to respect free plan rate limits
     time.sleep(5)
 
-# Fallback tweets if <24
+# Fallback tweets if <20
 default_tweets = [
-    "Just spotted a machine learning internship at NVIDIA! They’re seeking students to work on GPU-accelerated AI models. It’s a 12-week program with hands-on projects in deep learning. Time to polish your Python skills and apply! #AIInternships #TechCareers",
-    "Your portfolio gets you noticed. Your projects get you interviewed. Your passion gets you hired. Your growth keeps you thriving. Don’t stop at a degree—build something real! #CareerGrowth #TechCareers",
-    "AI models like VEO are getting too mainstream, collapsing complex ideas into safe answers. I asked about career paths, and it suggested ‘get a CS degree.’ Nah, build real projects and stand out! #AI #TechInsights"
+    "Spotted a machine learning internship at NVIDIA! They need undergrads for GPU-accelerated AI projects. It’s a 12-week program with hands-on coding. What they seek: → Python skills → Problem-solving grit → Team synergy. Degrees open doors; projects seal the deal. Ready to build AI?",
+    "Most freelancers stay broke. They chase → Low-paying gigs → One-off clients → Endless revisions. Winners do: → Niche down → Charge premium → Build repeat business. Cheap work costs you time. High-value work builds wealth. What’s your next client move?",
+    "Job seekers get ignored in 2025. They focus → Certificates → Generic CVs → Mass applications. Success demands: → Portfolios → Targeted outreach → Proof of impact. Resumes tell; projects show. How will you prove you’re the one to hire?"
 ]
-while len(all_tweets) < 24:
+while len(all_tweets) < 20:
     fallback = default_tweets[len(all_tweets) % len(default_tweets)]
-    if fallback not in seen:
+    if fallback not in seen and len(fallback) >= 500 and len(fallback) <= 600:
         all_tweets.append({"text": fallback})
         seen.add(fallback)
 
@@ -175,9 +186,9 @@ try:
     with output_file.open("w", encoding="utf-8") as f:
         json.dump({
             "date": today,
-            "tweets": all_tweets[:24]
+            "tweets": all_tweets[:20]
         }, f, indent=2, ensure_ascii=False)
-    print(f"✅ Saved {len(all_tweets[:24])} tweets to '{output_file.name}'.")
+    print(f"✅ Saved {len(all_tweets[:20])} tweets to '{output_file.name}'.")
 except Exception as e:
     print(f"❌ Failed to save tweets: {e}")
     exit(1)
