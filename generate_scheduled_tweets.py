@@ -1,3 +1,4 @@
+```python
 import os
 import json
 import re
@@ -5,16 +6,21 @@ import time
 from datetime import datetime
 from pathlib import Path
 import nltk
+import logging
+import requests
 
-# Ensure required NLTK data
+# Set up logging
+logging.basicConfig(filename='tweet_gen_log.txt', level=logging.INFO, 
+                    format='%(asctime)s: %(message)s')
+
 try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
+    nltk.data.find('sentiment/vader_lexicon')
 except LookupError:
     nltk.download('vader_lexicon')
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Path to store tweets
+# Paths
 output_file = Path("scheduled_tweets.json")
 log_file = Path("tweet_post_log.txt")
 today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -22,11 +28,14 @@ today = datetime.utcnow().strftime("%Y-%m-%d")
 # Avoid regenerating for the same day
 if output_file.exists():
     try:
-        existing = json.load(output_file.open())
-        if existing.get("date") == today:
+        with output_file.open('r', encoding='utf-8') as f:
+            existing = json.load(f)
+        if existing.get("date") == today and len(existing.get("tweets", [])) >= 20:
+            logging.info("Tweets already generated for today.")
             print("✅ Tweets already generated for today.")
             exit(0)
     except json.JSONDecodeError:
+        logging.warning("Corrupted JSON file. Will overwrite.")
         print("⚠️ Corrupted JSON file. Will overwrite.")
 
 # Prompt for LLMs
@@ -56,11 +65,9 @@ Topics to Cover:
 
 Generate exactly 20 posts per day:
 - 11 posts: Focus on new intern positions, research positions, career programs, or career internships. Simulate searching job boards, company career pages, and academic sites. Include company names (e.g., NVIDIA, DeepMind), fields (e.g., tech/AI), or program details without links. Use arrow-driven, contrast-heavy style. No links or images.
-  - Example: "Found a data science internship at Google! They need undergrads to analyze datasets with Python. It’s a 12-week program with expert mentors. What they want: → Python skills → Data curiosity → Team players. Degrees get you noticed; projects get you hired. Ready to code?"
 - 9 posts: Focus on freelancing, job hunting, skills vs degrees, developer growth, reality checks, or income growth. Use arrow-driven, contrast-heavy style with fresh angles. No links or images.
-  - Example: "Most job seekers fail. They apply → 100 jobs → Generic CVs → No follow-up. Winners do: → Target 10 roles → Build portfolios → Network smartly. Applications don’t win; proof does. How will you show your impact?"
 
-Format output exactly like this, numbering posts sequentially:
+Format output exactly like this:
 ---
 Post 1:
 [text]
@@ -68,7 +75,8 @@ Post 1:
 Post 2:
 [text]
 
-Post 3:
+...
+Post 20:
 [text]
 ---
 """
@@ -78,106 +86,121 @@ sia = SentimentIntensityAnalyzer()
 all_tweets = []
 seen = set()
 
-# Load previously posted tweets from tweet_post_log.txt to avoid repeats
+# Optimize duplicate checking
+def check_duplicate(tweet, log_file=log_file, max_lines=1000):
+    """Check if tweet is a duplicate, reading only recent lines."""
+    if not log_file.exists():
+        return False
+    try:
+        with log_file.open('r', encoding='utf-8') as f:
+            lines = f.readlines()[-max_lines:]  # Read last 1000 lines
+        return any(tweet in line for line in lines if "Posted tweet:" in line)
+    except Exception as e:
+        logging.error(f"Error reading tweet_post_log.txt: {e}")
+        return False
+
+# Load seen tweets
 if log_file.exists():
     try:
-        with log_file.open("r", encoding="utf-8") as f:
-            for line in f:
-                if "Posted tweet:" in line:
-                    tweet_text = line.split("Posted tweet:")[1].split("(ID:")[0].strip()
-                    seen.add(tweet_text)
+        with log_file.open('r', encoding='utf-8') as f:
+            lines = f.readlines()[-1000:]  # Limit to recent entries
+        for line in lines:
+            if "Posted tweet:" in line:
+                tweet_text = line.split("Posted tweet:")[1].split("(ID:")[0].strip()
+                seen.add(tweet_text)
     except Exception as e:
-        print(f"⚠️ Error reading tweet_post_log.txt: {e}")
-
-batch_size = 5  # Smaller batch size for free plan limits
-num_batches = 4  # 4 batches * 5 tweets = 20 tweets
+        logging.error(f"Error reading tweet_post_log.txt: {e}")
 
 # Validate environment variables
 required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
 for env in required_env:
     if not os.getenv(env):
+        logging.error(f"Missing environment variable: {env}")
         print(f"❌ Missing environment variable: {env}")
         exit(1)
 
 # Try Gemini API first
-raw_text = ""
 try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
     model = genai.GenerativeModel("gemini-1.5-pro-latest")
 except Exception as e:
+    logging.warning(f"Gemini setup failed: {e}")
     print(f"⚠️ Gemini setup failed: {e}")
 
-# Fallback to OpenAI if Gemini fails
+# Fallback to OpenAI
 if 'model' not in locals():
     try:
         import openai
         openai.api_key = os.getenv("OPENAI_API_KEY")
         if not openai.api_key:
-            raise ValueError("Missing OPENAI_API_KEY environment variable")
+            raise ValueError("Missing OPENAI_API_KEY")
     except Exception as e:
+        logging.error(f"Both Gemini and OpenAI setup failed: {e}")
         print(f"❌ Both Gemini and OpenAI setup failed: {e}")
         exit(1)
 
-# Batch generation to respect free plan limits
+# Batch generation
+batch_size = 4  # 4 tweets per batch
+num_batches = 5  # 5 batches * 4 = 20 tweets
 for batch in range(num_batches):
+    batch_prompt = prompt.replace("Write 20 long-form tweets", f"Write {batch_size} long-form tweets")
+    logging.info(f"Generating batch {batch + 1}/{num_batches}...")
     print(f"Generating batch {batch + 1}/{num_batches}...")
     try:
+        start_time = time.time()
         if 'model' in locals():
-            response = model.generate_content(prompt)
+            response = model.generate_content(batch_prompt, request_options={"timeout": 30})
             raw_text = response.text.strip()
-            print(f"✅ Gemini batch {batch + 1} successful.")
         else:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500
+                messages=[{"role": "user", "content": batch_prompt}],
+                max_tokens=1200,
+                timeout=30
             )
             raw_text = response.choices[0].message.content.strip()
-            print(f"✅ OpenAI batch {batch + 1} successful.")
+        logging.info(f"Batch {batch + 1} generated in {time.time() - start_time:.2f}s")
+        print(f"✅ Batch {batch + 1} successful.")
     except Exception as e:
+        logging.error(f"Batch {batch + 1} failed: {e}")
         print(f"❌ Batch {batch + 1} failed: {e}")
-        time.sleep(10)  # Delay for rate limits
+        time.sleep(2 ** min(batch, 5))  # Exponential backoff
         continue
 
-    # Log raw response for debugging
+    # Log raw response
     with open("raw_response_log.txt", "a", encoding="utf-8") as f:
         f.write(f"Batch {batch + 1} response:\n{raw_text}\n\n")
 
     # Extract tweets
     pattern = re.compile(r"Post \d+:\n(.*?)(?=\nPost \d+:|\Z)", re.DOTALL)
     matches = pattern.findall(raw_text)
-
     if not matches:
-        print(f"❌ Failed to parse posts in batch {batch + 1}. Output was:\n{raw_text}")
+        logging.error(f"Failed to parse posts in batch {batch + 1}. Output: {raw_text}")
+        print(f"❌ Failed to parse posts in batch {batch + 1}.")
         continue
 
-    # Filter tweets
     for tweet_text in matches:
         tweet_text = tweet_text.strip()
-        if (len(tweet_text) >= 500 and
-            len(tweet_text) <= 600 and
-            tweet_text not in seen and
+        if (500 <= len(tweet_text) <= 600 and
+            not check_duplicate(tweet_text) and
             sia.polarity_scores(tweet_text)["compound"] > 0.1):
             all_tweets.append({"text": tweet_text})
             seen.add(tweet_text)
 
-    # Stop if we have enough
     if len(all_tweets) >= 20:
         break
+    time.sleep(5)  # Rate limit delay
 
-    # Delay to respect free plan rate limits
-    time.sleep(5)
-
-# Fallback tweets if <20
+# Fallback tweets
 default_tweets = [
-    "Spotted a machine learning internship at NVIDIA! They need undergrads for GPU-accelerated AI projects. It’s a 12-week program with hands-on coding. What they seek: → Python skills → Problem-solving grit → Team synergy. Degrees open doors; projects seal the deal. Ready to build AI?",
-    "Most freelancers stay broke. They chase → Low-paying gigs → One-off clients → Endless revisions. Winners do: → Niche down → Charge premium → Build repeat business. Cheap work costs you time. High-value work builds wealth. What’s your next client move?",
-    "Job seekers get ignored in 2025. They focus → Certificates → Generic CVs → Mass applications. Success demands: → Portfolios → Targeted outreach → Proof of impact. Resumes tell; projects show. How will you prove you’re the one to hire?"
+    "Found an AI research internship at DeepMind! They seek grads for NLP projects. It’s a 6-month program with cutting-edge mentors. Path to impact: → Learn PyTorch → Build prototypes → Publish findings. Degrees get you in; research wins the game. Ready to shape AI’s future?",
+    "Freelancers plateau fast. They grind → Low-value gigs → No systems → Burnout. Pros do: → Specialize → Automate tasks → Upsell retainers. Chasing clients wastes time; systems build wealth. What’s your next step to scale?",
+    "Job seekers lose in 2025. They spam → Resumes → Generic skills → No network. Winners focus: → Portfolios → Referrals → Business impact. Applications fade; proof shines. How will you stand out in a crowded market?"
 ]
 while len(all_tweets) < 20:
     fallback = default_tweets[len(all_tweets) % len(default_tweets)]
-    if fallback not in seen and len(fallback) >= 500 and len(fallback) <= 600:
+    if not check_duplicate(fallback) and 500 <= len(fallback) <= 600:
         all_tweets.append({"text": fallback})
         seen.add(fallback)
 
@@ -188,7 +211,10 @@ try:
             "date": today,
             "tweets": all_tweets[:20]
         }, f, indent=2, ensure_ascii=False)
+    logging.info(f"Saved {len(all_tweets[:20])} tweets to {output_file.name}")
     print(f"✅ Saved {len(all_tweets[:20])} tweets to '{output_file.name}'.")
 except Exception as e:
+    logging.error(f"Failed to save tweets: {e}")
     print(f"❌ Failed to save tweets: {e}")
     exit(1)
+```
