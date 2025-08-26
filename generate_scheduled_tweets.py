@@ -17,20 +17,20 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch-size", type=int, default=5, help="Number of tweets to generate per batch")
-parser.add_argument("--max-tweets", type=int, default=20, help="Maximum number of tweets to generate")
+parser.add_argument("--batch-size", type=int, default=15, help="Number of tweets to generate per batch")
+parser.add_argument("--max-tweets", type=int, default=100, help="Maximum number of tweets to generate")
 args = parser.parse_args()
 
 # Path to store tweets
 output_file = Path("scheduled_tweets.json")
 today = datetime.utcnow().strftime("%Y-%m-%d")
 
-# Check if we already have enough tweets
+# Check if we already have enough tweets for today
 if output_file.exists():
     try:
         existing = json.load(output_file.open())
         if existing.get("date") == today and len(existing.get("tweets", [])) >= args.max_tweets:
-            print(f"✅ Already have {len(existing.get('tweets', []))} tweets for today (need {args.max_tweets}).")
+            print(f"✅ Already have {len(existing.get('tweets', []))} tweets for today.")
             exit(0)
     except json.JSONDecodeError:
         print("⚠️ Corrupted JSON file. Will overwrite.")
@@ -70,7 +70,7 @@ all_tweets = []
 seen = set()
 batch_size = args.batch_size
 max_tweets = args.max_tweets
-num_batches = max(1, min(10, max_tweets // batch_size))  # Calculate needed batches
+num_batches = (max_tweets + batch_size - 1) // batch_size  # Calculate needed batches
 
 # If we already have some tweets, load them
 if output_file.exists():
@@ -112,7 +112,7 @@ if 'model' not in locals():
         print(f"❌ Both Gemini and OpenAI setup failed: {e}")
         exit(1)
 
-# Batch generation to respect free plan limits
+# Batch generation (no rate limiting for premium accounts)
 for batch in range(num_batches):
     if len(all_tweets) >= max_tweets:
         break
@@ -125,15 +125,14 @@ for batch in range(num_batches):
             print(f"✅ Gemini batch {batch + 1} successful.")
         else:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",  # Using GPT-4 for premium quality
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=800  # Reduced for smaller batches
+                max_tokens=2000
             )
             raw_text = response.choices[0].message.content.strip()
             print(f"✅ OpenAI batch {batch + 1} successful.")
     except Exception as e:
         print(f"❌ Batch {batch + 1} failed: {e}")
-        time.sleep(5)  # Shorter delay for rate limits
         continue
 
     # Log raw response for debugging
@@ -151,10 +150,7 @@ for batch in range(num_batches):
     # Filter tweets
     for post_text in matches:
         tweet_text = post_text.strip()
-        if (tweet_text and 
-            len(tweet_text) <= 280 and  # Twitter character limit
-            tweet_text not in seen and 
-            sia.polarity_scores(tweet_text)["compound"] > 0.1):
+        if tweet_text and tweet_text not in seen:
             all_tweets.append({"text": tweet_text, "image_suggestion": None})
             seen.add(tweet_text)
             print(f"➕ Added tweet: {tweet_text[:50]}...")
@@ -162,9 +158,6 @@ for batch in range(num_batches):
     # Stop if enough tweets
     if len(all_tweets) >= max_tweets:
         break
-
-    # Delay to respect free plan rate limits
-    time.sleep(3)
 
 # Fallback tweets if we don't have enough
 default_tweets = [
