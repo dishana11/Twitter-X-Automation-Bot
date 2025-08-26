@@ -7,8 +7,6 @@ import requests
 import tweepy
 from pathlib import Path
 from datetime import datetime
-import openai
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Config
 SCHEDULE_FILE = Path("scheduled_tweets.json")
@@ -16,10 +14,10 @@ LOG_FILE = Path("tweet_post_log.txt")
 MAX_IMAGES_PER_RUN = 2
 IMAGE_PROBABILITY = 0.2  # ~20% chance for tweets with image suggestions
 
-# Validate environment variables
-required_env = ["TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET",
-                "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET", "OPENAI_API_KEY"]
-for env in required_env:
+# Validate required Twitter environment variables
+required_twitter_env = ["TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET",
+                        "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"]
+for env in required_twitter_env:
     if not os.getenv(env):
         print(f"❌ Missing environment variable: {env}")
         with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -42,28 +40,37 @@ client_v2 = tweepy.Client(
     wait_on_rate_limit=True
 )
 
-# Initialize OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Check if OpenAI API key is available (optional for image generation)
+OPENAI_AVAILABLE = bool(os.getenv("OPENAI_API_KEY"))
+if OPENAI_AVAILABLE:
+    import openai
+    from tenacity import retry, stop_after_attempt, wait_fixed
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+else:
+    print("⚠️ OpenAI API key not available. Image generation disabled.")
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.utcnow()}: OpenAI API key not available. Image generation disabled.\n")
 
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
-def generate_image(prompt):
-    """Generate image with DALL-E and return temporary file path."""
-    try:
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size="1024x1024"
-        )
-        url = response['data'][0]['url']
-        r = requests.get(url, timeout=20)  # Increased timeout for stability
-        r.raise_for_status()
-        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        tmp_file.write(r.content)
-        tmp_file.close()
-        return tmp_file.name, url
-    except Exception as e:
-        print(f"❌ Image generation failed: {e}")
-        raise  # Let tenacity handle retries
+if OPENAI_AVAILABLE:
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def generate_image(prompt):
+        """Generate image with DALL-E and return temporary file path."""
+        try:
+            response = openai.Image.create(
+                prompt=prompt,
+                n=1,
+                size="1024x1024"
+            )
+            url = response['data'][0]['url']
+            r = requests.get(url, timeout=20)
+            r.raise_for_status()
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            tmp_file.write(r.content)
+            tmp_file.close()
+            return tmp_file.name, url
+        except Exception as e:
+            print(f"❌ Image generation failed: {e}")
+            raise
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
 def post_tweet(client, text, media_ids=None):
@@ -74,7 +81,7 @@ def post_tweet(client, text, media_ids=None):
         return client.create_tweet(text=text)
     except Exception as e:
         print(f"❌ Tweet posting failed: {e}")
-        raise  # Let tenacity handle retries
+        raise
 
 def post_tweets(count):
     """Post tweets from schedule, with images for ~20% of tweets with suggestions."""
@@ -103,7 +110,7 @@ def post_tweets(count):
         image_suggestion = tweet.get("image_suggestion")
 
         media_ids = None
-        if (image_suggestion and
+        if (OPENAI_AVAILABLE and image_suggestion and
             images_posted < MAX_IMAGES_PER_RUN and
             random.random() < IMAGE_PROBABILITY):
             try:
