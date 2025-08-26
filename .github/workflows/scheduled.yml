@@ -2,7 +2,7 @@ name: Scheduled Frequent Posts
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours
+    - cron: '0 */2 * * *'  # Every 2 hours (12 runs/day)
   workflow_dispatch:
 
 jobs:
@@ -38,7 +38,8 @@ jobs:
           TWITTER_CONSUMER_SECRET: ${{ secrets.TWITTER_CONSUMER_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-        run: python post_scheduled_tweet.py --count 2
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python post_scheduled_tweet.py --count 8
 
       - name: Commit Changes
         run: |
@@ -47,11 +48,3 @@ jobs:
           git add scheduled_tweets.json tweet_post_log.txt raw_response_log.txt
           git commit -m "Update scheduled_tweets.json, post log, and raw response log" || echo "No changes to commit"
           git push origin main
-
-      - name: Notify on Failure
-        if: failure()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: 'Tweet generation or posting failed in Twitter-X-Automation-Bot! Check logs.'
