@@ -12262,3 +12262,762 @@ Post 15:
 My time management skills are so bad, I need an app to schedule time to learn about time management.
 #Irony #ProductivityFail
 
+Batch 1 response:
+---
+Post 1:
+If you could instantly become an expert in anything, what would you choose and why?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy? Don't be shy, we all have 'em.
+
+Post 3:
+Is it better to be a jack of all trades, or a master of one?  Discuss!
+
+Post 4:
+What's one thing you're ridiculously good at, even if it's totally useless?
+
+Post 5:
+What's the most interesting fact you've learned recently? Blow my mind.
+
+Post 6:
+If you could have any superpower, but it had a ridiculously inconvenient side effect, what would they be?
+
+Post 7:
+What's the best piece of advice you've ever received?  Sharing is caring!
+
+Post 8:
+Is a hot dog a sandwich? This is important.  I need answers.
+
+Post 9:
+What's one song that instantly puts you in a good mood?  Let's create a happy playlist!
+
+Post 10:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 11:
+What's one thing you regret *not* doing?  Let's learn from each other's missed opportunities.
+
+Post 12:
+Do you believe in aliens? Why or why not?  No judgement here.
+
+Post 13:
+What's the silliest thing you've ever stressed out about?  Let's laugh at ourselves.
+
+Post 14:
+What's one thing you're learning right now, big or small?
+
+Post 15:
+If you could live in any fictional world, which one would it be and why?
+
+Post 16:
+What's the most embarrassing song you secretly love?  Come on, confess!
+
+Post 17:
+What's something you're surprisingly bad at?  We all have our weaknesses.
+
+Post 18:
+If you could travel anywhere in the world right now, where would you go?
+
+Post 19:
+What's one thing you're grateful for today?  Let's spread some positivity.
+
+Post 20:
+What's a movie you could watch over and over again and never get tired of?
+---
+
+Batch 2 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy?  Don't be shy, we all have 'em.
+
+Post 3:
+Is it better to be a jack of all trades or a master of one?  Discuss!
+
+Post 4:
+What's the most interesting fact you've learned recently? Blow my mind.
+
+Post 5:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 6:
+What's one thing you're ridiculously good at that most people aren't?
+
+Post 7:
+Biggest pet peeve? Let's get this off our chests.
+
+Post 8:
+What's a movie or book that profoundly changed the way you think?
+
+Post 9:
+If you could go back in time and give your younger self one piece of advice, what would it be?
+
+Post 10:
+What's one societal norm you think is completely outdated? Let's shake things up.
+
+Post 11:
+What's the best piece of advice you've ever received?  Sharing is caring.
+
+Post 12:
+What's one skill you wish you could learn instantly?  No practice required.
+
+Post 13:
+What's the most spontaneous thing you've ever done? Stories please!
+
+Post 14:
+What's something you're irrationally afraid of?  Spiders don't count (too easy).
+
+Post 15:
+What's one thing you regret doing?  Let's learn from each other's mistakes.
+
+
+Post 16:
+Is cereal soup?  This is important.
+
+Post 17:
+If you could have any superpower, what would it be and how would you use it (for good, of course)?
+
+Post 18:
+What's one song that instantly puts you in a good mood?  Let's build a happy playlist.
+
+Post 19:
+What's something you're surprisingly bad at?  We all have our weaknesses.
+
+Post 20:
+If you could live anywhere in the world, where would it be and why?
+---
+
+Batch 3 response:
+---
+Post 1:
+What's the most interesting fact you've learned recently?  I'm ready to have my mind blown.
+
+Post 2:
+If you could only listen to one album for the rest of your life, what would it be and why?  No pressure.
+
+Post 3:
+What's a small act of kindness that someone did for you that you'll never forget?
+
+Post 4:
+Is cereal soup? This debate needs to be settled once and for all.
+
+Post 5:
+What's one thing you're surprisingly good at?  Bragging encouraged.
+
+Post 6:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 7:
+What's the weirdest food combination you enjoy? Don't be shy.
+
+Post 8:
+What's one piece of advice you wish you could give your younger self?
+
+Post 9:
+If you could have any superpower, what would it be and how would you use it (for good or evil)?
+
+Post 10:
+What's the most beautiful place you've ever been?  Trying to plan my next trip.
+
+Post 11:
+What's one thing you're looking forward to this week?  Spread the positivity!
+
+Post 12:
+What's a skill you'd love to learn but haven't had the time for?
+
+Post 13:
+If you could live in any fictional universe, which one would you choose and why?
+
+Post 14:
+What's the best compliment you've ever received?
+
+Post 15:
+What's one thing you're grateful for today?
+
+
+---
+
+Batch 4 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy?  Don't be shy, we've all got one.
+
+Post 3:
+Is it better to be a jack of all trades or a master of one?  Let's debate.
+
+Post 4:
+What's one song that instantly puts you in a good mood?  Drop a link, let's spread the joy.
+
+Post 5:
+What's the best piece of advice you've ever ignored?  And how did that turn out?
+
+Post 6:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 7:
+What's a seemingly mundane task you find oddly satisfying?  Folding laundry? Organizing spices?  Let's hear it.
+
+Post 8:
+What's one thing you learned this week that blew your mind?
+
+Post 9:
+If you could have any superpower, but it had to be slightly inconvenient, what would it be?  (Example: Teleportation, but you always arrive 5 minutes late).
+
+Post 10:
+What's one thing you regret NOT doing?
+
+Post 11:
+Do you believe in aliens?  Why or why not?  Let's keep it civil, people.
+
+Post 12:
+What's a book or movie that profoundly changed the way you see the world?
+
+Post 13:
+If you could live in any fictional universe, which one would you choose and why?
+
+Post 14:
+What's one thing you're ridiculously good at that nobody appreciates?
+
+Post 15:
+What's the most interesting fact you know?  Go!
+
+Post 16:
+Is cereal soup? This is important.
+
+Post 17:
+If you could go back in time and give your younger self one piece of advice, what would it be?
+
+Post 18:
+What's the silliest thing you've ever spent money on?  No judgement here.
+
+Post 19:
+What's one skill you think everyone should learn in the 21st century?
+
+Post 20:
+What's your biggest pet peeve? Let's get this off our chests.
+---
+
+Batch 5 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the most interesting fact you've learned recently?  I'm always looking for new rabbit holes to fall down.
+
+Post 3:
+What's a song that instantly puts you in a good mood?  Need some new tunes for my playlist.
+
+Post 4:
+Is cereal soup?  Discuss.
+
+Post 5:
+What's the weirdest food combination you secretly enjoy?  Don't be shy.
+
+Post 6:
+If you could have any superpower, but it had a ridiculously inconvenient side effect, what would they both be?
+
+Post 7:
+What's one piece of advice you wish you could give your younger self?
+
+Post 8:
+What's something you're surprisingly good at?  Bragging encouraged.
+
+Post 9:
+What's the best book you've read this year?  Give me some recommendations!
+
+Post 10:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 11:
+What's one thing you're grateful for today?  Let's spread some positivity.
+
+Post 12:
+What's the most embarrassing song you secretly love to sing along to?
+
+Post 13:
+If you could travel anywhere in the world right now, where would you go and why?
+
+Post 14:
+What's a skill you'd love to learn but haven't had the time for yet?
+
+Post 15:
+What's the silliest thing you've ever stressed out about?  Let's laugh at ourselves.
+
+Post 16:
+What's one thing you regret *not* doing?
+
+Post 17:
+If you could rename any planet, which one would it be and what would you call it?
+
+Post 18:
+What's the best piece of advice you've ever received?
+
+Post 19:
+Is a hot dog a sandwich?  This debate needs to be settled.
+
+Post 20:
+What's something you're looking forward to in the near future?
+---
+
+Batch 6 response:
+---
+Post 1:
+What's the most interesting fact you've learned recently?  I'm ready to have my mind blown.
+
+Post 2:
+If you could instantly become an expert in anything, what would you choose and why?
+
+Post 3:
+What's a song that always puts you in a good mood?  Sharing is caring, people.
+
+Post 4:
+What's one thing you regret *not* doing?  Sometimes the road not taken haunts us the most.
+
+Post 5:
+Is cereal soup?  Don't @ me. Just answer the question.
+
+Post 6:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 7:
+What's the best piece of advice you've ever received?  Let's spread some wisdom!
+
+Post 8:
+What's a movie that everyone loves but you just don't get?  I'm prepared for the downvotes.
+
+Post 9:
+If you could live in any fictional universe, which would you choose?  Asking for a friend... who is me.
+
+Post 10:
+What's one skill you wish you could learn instantly?  I'm thinking teleportation, personally.
+
+Post 11:
+What's the weirdest food combination you enjoy?  Don't be shy. We all have our quirks.
+
+Post 12:
+What's a small act of kindness that someone did for you that you'll never forget?
+
+Post 13:
+If you could have any superpower, what would it be and how would you use it in everyday life?  No saving the world, just daily stuff.
+
+Post 14:
+What's a book that changed your perspective on something?  Always looking for recommendations!
+
+Post 15:
+What's the most embarrassing song you secretly love to sing along to?  Come on, spill the tea.
+---
+
+Batch 7 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would you choose and why?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy? Don't be shy.
+
+Post 3:
+What's one thing you're surprisingly good at that most people wouldn't guess?
+
+Post 4:
+Is it better to be a jack of all trades or a master of one?  What do you think?
+
+Post 5:
+What's the best piece of advice you've ever received?  Let's hear some wisdom!
+
+Post 6:
+If you could have any superpower, what would it be and how would you use it in everyday life? (No saving the world, just daily stuff.)
+
+Post 7:
+What's one song that instantly puts you in a good mood?  Drop a link, I need some new tunes!
+
+Post 8:
+What's a skill you wish you had learned earlier in life?
+
+Post 9:
+Biggest pet peeve? Let's vent a little.
+
+Post 10:
+What's the most interesting fact you know?  Impress me!
+
+Post 11:
+If animals could talk, which species would have the best gossip?
+
+Post 12:
+What's one thing you're looking forward to this week?  Spread some positivity!
+
+Post 13:
+What's a movie you could watch over and over again?
+
+Post 14:
+What's one thing you regret *not* doing?
+
+Post 15:
+Is cereal soup?  Let's settle this once and for all.
+
+Post 16:
+If you could travel anywhere in the world right now, where would you go and why?
+
+Post 17:
+What's the most embarrassing song you secretly love?  Come on, spill it.
+
+Post 18:
+What's something you're ridiculously competitive about?
+
+Post 19:
+What's one invention you think we *don't* need?
+
+Post 20:
+What's your favorite way to unwind after a long day?
+
+
+---
+
+Batch 8 response:
+---
+Post 1:
+If you could rewrite one movie ending, which movie and how would you change it?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy? Don't be shy, we all have one.
+
+Post 3:
+Is it better to be a jack of all trades or a master of one?  Why?
+
+Post 4:
+What's one thing you're surprisingly good at that most people wouldn't guess?
+
+Post 5:
+If animals could suddenly talk, which species do you think would have the most to complain about?
+
+Post 6:
+What's the best piece of advice you've ever ignored?  (And how did that turn out?)
+
+Post 7:
+What's a seemingly insignificant childhood memory that still makes you smile?
+
+Post 8:
+If you could instantly become an expert in any one thing, what would it be?
+
+Post 9:
+Do you think pineapple belongs on pizza? There's only one right answer... kidding! (mostly)  What do YOU think?
+
+Post 10:
+What's one thing you regret *not* doing?
+
+Post 11:
+If you could have any superpower, but it had to be slightly inconvenient, what would it be and what's the inconvenience?
+
+Post 12:
+What's the most interesting fact you know?  Impress me!
+
+Post 13:
+What's one song that instantly puts you in a good mood?  Drop a link! (Optional, but highly encouraged)
+
+Post 14:
+What's something you used to be terrible at but are now pretty good at?  How'd you improve?
+
+Post 15:
+Is cereal soup?  This is important.  Discuss.
+
+
+---
+
+Batch 9 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the most interesting fact you've learned recently?  Trying to expand my brain here.
+
+Post 3:
+What's one song that always makes you feel better, no matter what?
+
+
+Post 4:
+Biggest pet peeve?  Let's commiserate.
+
+Post 5:
+If animals could suddenly talk, which species do you think would be the most annoying?
+
+Post 6:
+What's a piece of advice you wish you could give your younger self?
+
+
+Post 7:
+What's a skill you'd love to learn but haven't had the time or motivation to pursue?
+
+Post 8:
+Is cereal soup?  Discuss.
+
+Post 9:
+What's the weirdest food combination you secretly enjoy? Don't be shy.
+
+
+Post 10:
+If you could live in any fictional universe, which one would you choose and why?
+
+Post 11:
+What's one thing you're surprisingly good at?
+
+Post 12:
+What's the most spontaneous thing you've ever done?  Inspire me!
+
+
+Post 13:
+What's a small act of kindness that's made a big impact on you?
+
+Post 14:
+What's one thing you're grateful for today?
+
+Post 15:
+If you could have any superpower, what would it be and how would you use it (for good or evil)?  Be honest.
+---
+
+Batch 10 response:
+---
+Post 1:
+If you could rewrite one movie ending, which movie and how would you change it?
+
+Post 2:
+What's the most interesting fact you've learned recently?  Bonus points for sharing a source!
+
+Post 3:
+What's one thing you're surprisingly good at that most people wouldn't guess?
+
+Post 4:
+Is cereal soup?  Discuss.
+
+Post 5:
+What's the best piece of advice you've ever ignored (and did you regret it)?
+
+Post 6:
+If animals could suddenly talk, which species do you think would be the most annoying?
+
+Post 7:
+What's one invention from a sci-fi movie you wish existed in real life?
+
+Post 8:
+What's the weirdest food combination you enjoy? Don't be shy.
+
+Post 9:
+What's something you're grateful for today?  Let's spread some positivity!
+
+Post 10:
+If you could have any superpower, but it had a ridiculously inconvenient side effect, what power and side effect would you choose?
+
+
+Post 11:
+What's a skill you'd love to learn, but haven't gotten around to yet?
+
+Post 12:
+What's one thing you regret *not* doing?
+
+Post 13:
+Do you think pineapple belongs on pizza?  There's only one right answer (just kidding... maybe).
+
+Post 14:
+If you could travel anywhere in the world right now, where would you go and why?
+
+Post 15:
+What's the most embarrassing song you secretly love?
+
+
+Post 16:
+What's something you used to be terrible at, but are now pretty good at?
+
+Post 17:
+If you could only eat one food for the rest of your life, what would it be?
+
+Post 18:
+What's the silliest thing you've ever stressed out about?  Let's laugh together.
+
+Post 19:
+What's the best book you've read recently?
+
+Post 20:
+If you could live in any fictional universe, which one would you choose?
+---
+
+Batch 11 response:
+---
+Post 1:
+If you could rewrite one movie ending, which movie and how would you change it?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy?  Don't be shy, we all have one.
+
+Post 3:
+Is it better to be a jack of all trades or a master of one?  Why?
+
+Post 4:
+What's one thing you're surprisingly good at that most people wouldn't guess?
+
+Post 5:
+If animals could suddenly talk, which species do you think would have the most to complain about?
+
+Post 6:
+What's the best piece of advice you've ever ignored?  (And did you regret it?)
+
+Post 7:
+What's one song that instantly transports you back to a specific moment in time?
+
+Post 8:
+Is artificial intelligence a friend or foe?  Discuss.
+
+Post 9:
+What's the most interesting fact you've learned recently?
+
+Post 10:
+If you could have any superpower, but it had to be slightly inconvenient, what would it be and what's the inconvenience?  (Example: Teleportation, but you always arrive 5 minutes late.)
+
+Post 11:
+What's a skill you wish you had learned as a child?
+
+Post 12:
+What's the silliest thing you've ever convinced someone was true?
+
+Post 13:
+If you could live in any fictional universe, which one would you choose and why?
+
+Post 14:
+What's one thing you're ridiculously competitive about?
+
+Post 15:
+Do you think pineapple belongs on pizza?  Let's settle this once and for all. (Just kidding... mostly.)
+
+Post 16:
+What's a small act of kindness that's had a big impact on you?
+
+Post 17:
+What's one thing you regret NOT doing?
+
+Post 18:
+If you could only use three apps for the rest of your life, which would you choose?
+
+Post 19:
+What's the most beautiful place you've ever been?
+
+Post 20:
+What's one thing you're learning right now?
+---
+
+Batch 12 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the weirdest food combination you secretly enjoy?  Don't be shy, we all have one.
+
+Post 3:
+Is it better to be a jack of all trades, master of none, or a master of one?  Discuss!
+
+Post 4:
+What's the most interesting fact you've learned recently? Blow my mind!
+
+Post 5:
+What's one thing you're surprisingly good at, even though you don't do it often?
+
+Post 6:
+If you could have any superpower, but it had a hilariously inconvenient side effect, what would they be?
+
+Post 7:
+What's the best piece of advice you've ever received?  Sharing is caring!
+
+Post 8:
+Do you think aliens exist?  And if so, what's their deal?  Just curious.
+
+Post 9:
+What's one song that instantly puts you in a good mood?  Need some new tunes!
+
+Post 10:
+What's a skill you wish you had learned earlier in life? Never too late though, right?
+
+Post 11:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 12:
+What's the most embarrassing thing you've ever done in public?  Let's laugh together (at your expense, sorry not sorry).
+
+Post 13:
+What's one thing you regret doing?  Or maybe not doing?
+
+Post 14:
+If you could travel anywhere in the world right now, where would you go and why?
+
+Post 15:
+What's the silliest thing you've ever spent money on?  No judgment here (mostly).
+
+Post 16:
+What's a small act of kindness that's had a big impact on you?
+
+Post 17:
+If life were a video game, what would your character's special ability be?
+
+Post 18:
+What's one thing you're ridiculously competitive about?  Even if it's something silly.
+
+Post 19:
+What's a movie or TV show you could watch over and over again?
+
+Post 20:
+Is cereal soup?  Let's settle this once and for all.
+---
+
+Batch 13 response:
+---
+Post 1:
+If you could instantly become an expert in one thing, what would it be and why?
+
+Post 2:
+What's the weirdest food combination you genuinely enjoy?  Don't be shy, we've all got one.
+
+Post 3:
+What's one piece of advice you wish you could give your younger self?
+
+Post 4:
+Is it better to be a big fish in a small pond or a small fish in a big pond?  Discuss!
+
+Post 5:
+What's the most interesting fact you've learned recently?
+
+Post 6:
+What's a song that instantly puts you in a good mood?  Drop a link! (Just kidding... no links, remember?)  Just tell us the title!
+
+Post 7:
+If animals could suddenly talk, which species would have the most to complain about?
+
+Post 8:
+What's a skill you're currently trying to learn or improve?
+
+Post 9:
+What's the biggest lie we tell ourselves as a society?
+
+Post 10:
+What's one thing you're surprisingly good at? Brag a little!
+
+Post 11:
+If you could relive one day of your life, which would it be?
+
+Post 12:
+What's a movie or book that completely changed your perspective on something?
+
+Post 13:
+What's something you used to be really into, but aren't anymore?  Why the shift?
+
+Post 14:
+What's the best compliment you've ever received?
+
+Post 15:
+Is artificial intelligence a friend or foe?  Hit me with your hot takes.
+
+
+---
+
