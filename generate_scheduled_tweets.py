@@ -2,6 +2,7 @@ import os
 import json
 import re
 import time
+import argparse
 from datetime import datetime
 from pathlib import Path
 import nltk
@@ -14,16 +15,22 @@ except LookupError:
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
+# Parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--batch-size", type=int, default=5, help="Number of tweets to generate per batch")
+parser.add_argument("--max-tweets", type=int, default=20, help="Maximum number of tweets to generate")
+args = parser.parse_args()
+
 # Path to store tweets
 output_file = Path("scheduled_tweets.json")
 today = datetime.utcnow().strftime("%Y-%m-%d")
 
-# Avoid regenerating for the same day
+# Check if we already have enough tweets
 if output_file.exists():
     try:
         existing = json.load(output_file.open())
-        if existing.get("date") == today:
-            print("✅ Tweets already generated for today.")
+        if existing.get("date") == today and len(existing.get("tweets", [])) >= args.max_tweets:
+            print(f"✅ Already have {len(existing.get('tweets', []))} tweets for today (need {args.max_tweets}).")
             exit(0)
     except json.JSONDecodeError:
         print("⚠️ Corrupted JSON file. Will overwrite.")
@@ -61,8 +68,20 @@ Post 3:
 sia = SentimentIntensityAnalyzer()
 all_tweets = []
 seen = set()
-batch_size = 5  # Smaller batch size for free plan limits
-num_batches = 20  # 20 batches * 5 tweets = 100 tweets
+batch_size = args.batch_size
+max_tweets = args.max_tweets
+num_batches = max(1, min(10, max_tweets // batch_size))  # Calculate needed batches
+
+# If we already have some tweets, load them
+if output_file.exists():
+    try:
+        existing_data = json.load(output_file.open())
+        if existing_data.get("date") == today:
+            all_tweets = existing_data.get("tweets", [])
+            seen = set(tweet["text"] for tweet in all_tweets)
+            print(f"📊 Loaded {len(all_tweets)} existing tweets for today.")
+    except json.JSONDecodeError:
+        print("⚠️ Corrupted JSON file. Starting fresh.")
 
 # Validate environment variables
 required_env = ["GOOGLE_GEMINI", "OPENAI_API_KEY"]
@@ -77,6 +96,7 @@ try:
     import google.generativeai as genai
     genai.configure(api_key=os.getenv("GOOGLE_GEMINI"))
     model = genai.GenerativeModel("gemini-1.5-pro-latest")
+    print("✅ Using Google Gemini API")
 except Exception as e:
     print(f"⚠️ Gemini setup failed: {e}")
 
@@ -87,12 +107,16 @@ if 'model' not in locals():
         openai.api_key = os.getenv("OPENAI_API_KEY")
         if not openai.api_key:
             raise ValueError("Missing OPENAI_API_KEY environment variable")
+        print("✅ Using OpenAI API")
     except Exception as e:
         print(f"❌ Both Gemini and OpenAI setup failed: {e}")
         exit(1)
 
 # Batch generation to respect free plan limits
 for batch in range(num_batches):
+    if len(all_tweets) >= max_tweets:
+        break
+        
     print(f"Generating batch {batch + 1}/{num_batches}...")
     try:
         if 'model' in locals():
@@ -103,65 +127,72 @@ for batch in range(num_batches):
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500
+                max_tokens=800  # Reduced for smaller batches
             )
             raw_text = response.choices[0].message.content.strip()
             print(f"✅ OpenAI batch {batch + 1} successful.")
     except Exception as e:
         print(f"❌ Batch {batch + 1} failed: {e}")
-        time.sleep(10)  # Delay for rate limits
+        time.sleep(5)  # Shorter delay for rate limits
         continue
 
     # Log raw response for debugging
     with open("raw_response_log.txt", "a", encoding="utf-8") as f:
-        f.write(f"Batch {batch + 1} response:\n{raw_text}\n\n")
+        f.write(f"{datetime.utcnow()}: Batch {batch + 1} response:\n{raw_text}\n\n")
 
-    # Extract tweets and image suggestions
-    pattern = re.compile(
-        r"Post \d+:\n((?:.*?\n)*?)(?:(?:\nImage suggestion: (.*?))?)(?=\nPost \d+:|\Z)",
-        re.DOTALL
-    )
+    # Extract tweets
+    pattern = re.compile(r"Post \d+:\s*\n((?:.*\n)*?)(?=\nPost \d+:\s*\n|\Z)", re.DOTALL)
     matches = pattern.findall(raw_text)
 
     if not matches:
-        print(f"❌ Failed to parse posts in batch {batch + 1}. Output was:\n{raw_text}")
+        print(f"❌ Failed to parse posts in batch {batch + 1}.")
         continue
 
     # Filter tweets
-    for post_text, image_suggestion in matches:
+    for post_text in matches:
         tweet_text = post_text.strip()
-        if len(tweet_text) <= 880 and tweet_text not in seen and sia.polarity_scores(tweet_text)["compound"] > 0.1:
-            all_tweets.append({"text": tweet_text, "image_suggestion": image_suggestion or None})
+        if (tweet_text and 
+            len(tweet_text) <= 280 and  # Twitter character limit
+            tweet_text not in seen and 
+            sia.polarity_scores(tweet_text)["compound"] > 0.1):
+            all_tweets.append({"text": tweet_text, "image_suggestion": None})
             seen.add(tweet_text)
+            print(f"➕ Added tweet: {tweet_text[:50]}...")
 
     # Stop if enough tweets
-    if len(all_tweets) >= 100:
+    if len(all_tweets) >= max_tweets:
         break
 
     # Delay to respect free plan rate limits
-    time.sleep(5)
+    time.sleep(3)
 
-# Fallback tweets if <100
+# Fallback tweets if we don't have enough
 default_tweets = [
     "What's one piece of advice you'd give to your younger self?",
     "If you could master any skill instantly, what would it be and why?",
     "What's something you believed as a child that turned out to be completely wrong?",
-    "What's the most important lesson you've learned from a failure?"
+    "What's the most important lesson you've learned from a failure?",
+    "What book has had the biggest impact on your life?",
+    "If you could have a conversation with anyone living or dead, who would it be?",
+    "What's a simple pleasure that always makes your day better?",
+    "What's something you've been meaning to try but haven't gotten around to yet?"
 ]
-while len(all_tweets) < 100:
+
+while len(all_tweets) < max_tweets:
     fallback = default_tweets[len(all_tweets) % len(default_tweets)]
     if fallback not in seen:
         all_tweets.append({"text": fallback, "image_suggestion": None})
         seen.add(fallback)
+        print(f"➕ Added fallback tweet: {fallback}")
 
 # Save to JSON
 try:
     with output_file.open("w", encoding="utf-8") as f:
         json.dump({
             "date": today,
-            "tweets": all_tweets[:100]
+            "tweets": all_tweets[:max_tweets]
         }, f, indent=2, ensure_ascii=False)
-    print(f"✅ Saved {len(all_tweets[:100])} tweets to '{output_file.name}'.")
+    print(f"✅ Saved {len(all_tweets[:max_tweets])} tweets to '{output_file.name}'.")
 except Exception as e:
     print(f"❌ Failed to save tweets: {e}")
     exit(1)
