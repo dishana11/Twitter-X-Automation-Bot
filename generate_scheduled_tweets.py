@@ -17,8 +17,8 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch-size", type=int, default=15, help="Number of tweets to generate per batch")
-parser.add_argument("--max-tweets", type=int, default=100, help="Maximum number of tweets to generate")
+parser.add_argument("--batch-size", type=int, default=5, help="Number of tweets to generate per batch")
+parser.add_argument("--max-tweets", type=int, default=50, help="Maximum number of tweets to generate")
 args = parser.parse_args()
 
 # Path to store tweets
@@ -35,32 +35,43 @@ if output_file.exists():
     except json.JSONDecodeError:
         print("⚠️ Corrupted JSON file. Will overwrite.")
 
-# Prompt for LLMs
+# Updated prompt for tech-focused content
 prompt = """
-You are a witty, casual social media creator who writes posts for X.com (Twitter). Your posts should be:
-- Primarily engaging questions that spark conversation across various fields (tech, science, arts, business, etc.)
-- Questions should be thought-provoking but accessible to people from different backgrounds
-- Include real-life questions like "What's one thing you regret doing?" or "What's the best advice you've ever received?"
-- Format as 1-3 line questions that encourage responses
-- Absolutely NO hashtags in any posts
-- Vary the style throughout the day: some should be curious, some playful, some philosophical
-- Questions should feel human and conversational, like you're genuinely curious
-- Some examples: 
-  "What's one technology you think will disappear in 5 years?" 
-  "If you could have dinner with any historical figure, who would it be and why?"
-  "What's something you believed as a child that turned out to be completely wrong?"
-  "What's one skill you think everyone should learn?"
+You are a tech industry analyst who creates engaging posts about the latest algorithms, research findings, and company developments. Your posts should be:
+
+- Focused on recent tech developments, AI breakthroughs, chip advancements, or major company research
+- Approximately 500-600 characters with a compelling hook
+- Include specific data points, statistics, or comparisons when possible
+- Use a professional but engaging tone
+- Format with clear sections using → for bullet points
+- Include a citation to the source at the end (e.g., The Economic Times, arXiv, etc.)
+- Absolutely NO hashtags
+
+Examples of the desired format:
+
+Nvidia's Jetson Thor: The New Robot Brain
+Nvidia just dropped Jetson Thor:
+→ 7.5× more AI compute
+→ 3.1× more CPU power
+→ 2× memory over Jetson Orin 
+The Economic Times
+Barron's
+
+DeepMind's AlphaEvolve: AI designing better AI
+DeepMind's AlphaEvolve is rewriting algorithms better than humans—even improving decades-old solutions like the Strassen matrix algorithm. 
+WIRED
+Wikipedia
 
 Format your output exactly like this, numbering posts sequentially:
 ---
 Post 1:
-[Your engaging question here]
+[Your engaging tech post here]
 
 Post 2:
-[Your engaging question here]
+[Your engaging tech post here]
 
 Post 3:
-[Your engaging question here]
+[Your engaging tech post here]
 ---
 """
 
@@ -70,7 +81,7 @@ all_tweets = []
 seen = set()
 batch_size = args.batch_size
 max_tweets = args.max_tweets
-num_batches = (max_tweets + batch_size - 1) // batch_size  # Calculate needed batches
+num_batches = (max_tweets + batch_size - 1) // batch_size
 
 # If we already have some tweets, load them
 if output_file.exists():
@@ -112,7 +123,7 @@ if 'model' not in locals():
         print(f"❌ Both Gemini and OpenAI setup failed: {e}")
         exit(1)
 
-# Batch generation (no rate limiting for premium accounts)
+# Batch generation
 for batch in range(num_batches):
     if len(all_tweets) >= max_tweets:
         break
@@ -125,7 +136,7 @@ for batch in range(num_batches):
             print(f"✅ Gemini batch {batch + 1} successful.")
         else:
             response = openai.ChatCompletion.create(
-                model="gpt-4",  # Using GPT-4 for premium quality
+                model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=2000
             )
@@ -150,7 +161,10 @@ for batch in range(num_batches):
     # Filter tweets
     for post_text in matches:
         tweet_text = post_text.strip()
-        if tweet_text and tweet_text not in seen:
+        if (tweet_text and 
+            len(tweet_text) <= 600 and  # Increased character limit
+            len(tweet_text) >= 400 and  # Minimum length
+            tweet_text not in seen):
             all_tweets.append({"text": tweet_text, "image_suggestion": None})
             seen.add(tweet_text)
             print(f"➕ Added tweet: {tweet_text[:50]}...")
@@ -161,14 +175,11 @@ for batch in range(num_batches):
 
 # Fallback tweets if we don't have enough
 default_tweets = [
-    "What's one piece of advice you'd give to your younger self?",
-    "If you could master any skill instantly, what would it be and why?",
-    "What's something you believed as a child that turned out to be completely wrong?",
-    "What's the most important lesson you've learned from a failure?",
-    "What book has had the biggest impact on your life?",
-    "If you could have a conversation with anyone living or dead, who would it be?",
-    "What's a simple pleasure that always makes your day better?",
-    "What's something you've been meaning to try but haven't gotten around to yet?"
+    "Nvidia's Blackwell GPUs are redefining AI compute with 2.5x faster training and 5x faster inference than previous gen. The chip war is heating up as AMD and Intel scramble to respond. TechCrunch",
+    "OpenAI's new multimodal model can process text, images, and audio simultaneously—a step closer to true artificial general intelligence. Early tests show 40% improvement on complex reasoning tasks. MIT Technology Review",
+    "Quantum computing milestone: Researchers achieved 99.9% fidelity in 2-qubit operations, crossing the threshold for error correction. Commercial quantum computers might arrive sooner than expected. Nature Journal",
+    "Tesla's Optimus robot now handles complex factory tasks with 90% human-level dexterity. Musk predicts 1 million robots in Tesla factories by 2025. Reuters",
+    "Apple's on-device AI breakthrough: New model runs complex LLMs on iPhone with 5x efficiency improvement. Privacy-focused AI could be the next battleground. The Verge"
 ]
 
 while len(all_tweets) < max_tweets:
